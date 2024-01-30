@@ -5,6 +5,8 @@
 
 #include<cmath>
 #include <iostream>
+#include "raytracer.h"
+#include "vec3.h"
 
 void framebuffer_size_callback(GLFWwindow* window, int width, int height);
 void processInput(GLFWwindow *window);
@@ -35,99 +37,7 @@ const char *fragmentShaderSource = "#version 330 core\n"
     "void main()\n"
     "{\n"
     "   FragColor = texture(texture1, TexCoord);\n"
-    "}\n\0";
-
-class Color {
-public:
-    double r, g, b;
-
-    Color(double r, double g, double b) : r(r), g(g), b(b) {}
-
-    Color operator+(const Color& other) const {
-        return Color(r + other.r, g + other.g, b + other.b);
-    }
-
-    Color operator-(const Color& other) const {
-        return Color(r - other.r, g - other.g, b - other.b);
-    }
-
-    Color operator*(double t) const {
-        return Color(r * t, g * t, b * t);
-    }
-
-    Color operator/(double t) const {
-        return Color(r / t, g / t, b / t);
-    }
-};
-
-class Vec3 {
-public:
-    double x, y, z;
-
-    Vec3(double x, double y, double z) : x(x), y(y), z(z) {}
-
-    Vec3 operator+(const Vec3& other) const {
-        return Vec3(x + other.x, y + other.y, z + other.z);
-    }
-
-    Vec3 operator-(const Vec3& other) const {
-        return Vec3(x - other.x, y - other.y, z - other.z);
-    }
-
-    Vec3 operator*(double t) const {
-        return Vec3(x * t, y * t, z * t);
-    }
-
-    Vec3 operator/(double t){
-        return Vec3(x / t, y / t, z / t);
-    }
-
-    double length() const {
-        return sqrt(x * x + y * y + z * z);
-    }
-    Vec3 unit_vector() const{
-        double l = length();
-        return Vec3(x / l, y / l, z / l);
-    }
-    double dot(const Vec3& other) const {
-        return x * other.x + y * other.y + z * other.z;
-    }
-};
-
-class Ray {
-public:
-    Vec3 origin;
-    Vec3 direction;
-
-    Ray(const Vec3& origin, const Vec3& direction) : origin(origin), direction(direction) {}
-
-    Vec3 pointAt(double t) const {
-        return origin + direction * t;
-    }
-};
-
-bool intersect_Sphere(const Ray& ray, const Vec3 center, double radius) {
-    // quadratic equation
-    double a = ray.direction.dot(ray.direction);
-    double b = (ray.direction * 2).dot(ray.origin - center);
-    double c = (ray.origin - center).dot((ray.origin - center)) - (radius * radius);
-
-    double discriminant = (b * b) - (4 * a * c);
-    // std::cout << discriminant << std::endl;
-
-    if(discriminant >= 0){
-        return true;
-    }
-    return false;
-}
-
-Color traceRay(const Ray& ray) {
-    if(intersect_Sphere(ray, Vec3(0,0,-1), 0.33)){
-        return Color(0, 108, 0);
-    }
-    return Color(0, 0, 0);
-}
-    
+    "}\n\0";    
 
 int main()
 {
@@ -248,7 +158,7 @@ int main()
     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
 
     auto aspect_ratio = 16.0 / 9.0;
-    int width = 400;
+    int width = 1000;
 
     int height = static_cast<int>( width / aspect_ratio);
     if(height < 1){ height = 1; }
@@ -276,9 +186,6 @@ int main()
 
     unsigned char image[width*height*3];
 
-    // Camera
-    
-
     // basis vectors
     Vec3 U = Vec3(1, 0, 0);
     Vec3 V = Vec3(0, 1, 0);
@@ -287,15 +194,14 @@ int main()
     for (int y = 0; y < height; y++){
         for (int x = 0; x < width; x++){
             
-            double u = (double(x) + 0.5) / width;  // u-coordinate of the pixel in [0,1]
-            double v = (double(y) + 0.5) / height;
+            Vec3 rayOrigin = cameraPosition;
+            auto viewplane_pixel_loc = initial_pixel + (pixel_delta_u * x) + (pixel_delta_v * y);
+            Vec3 rayDirection = (viewplane_pixel_loc - cameraPosition);
 
-            auto pixel_center = initial_pixel + (pixel_delta_u * x) + (pixel_delta_v * y);
-            Vec3 cameraDirection = (pixel_center - cameraPosition);
-            // std::cout << "[" << cameraDirection.x << ',' << cameraDirection.y << ',' << cameraDirection.z << "]" << std::endl;
-            // Vec3 rayDirection = cameraDirection; // direction based on pixel position
-            
-            Ray ray(cameraPosition, cameraDirection);
+            // rayOrigin = initial_pixel + (pixel_delta_u * x) - (pixel_delta_v * y);
+            // rayDirection = Vec3(0, 0, -1);
+
+            Ray ray(rayOrigin, rayDirection);
 
             Color color = traceRay(ray);
 
