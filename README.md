@@ -1,0 +1,1 @@
+An ensemble of projects and assignments I will be doing in the Computer Graphics course at UF.
