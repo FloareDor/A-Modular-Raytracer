@@ -167,7 +167,7 @@ int main()
     auto focalLength = 0;
     auto viewport_height = 2.0;
     auto viewport_width = viewport_height * (static_cast<double>(width)/height);
-    Vec3 cameraPosition = Vec3(0, 0, 0);
+    Vec3 cameraPosition = Vec3(0,0,0);
 
     // The vectors along the axis(es) of the viewport / viewplane
     Vec3 viewport_u = Vec3(viewport_width, 0, 0);
@@ -177,12 +177,12 @@ int main()
     Vec3 pixel_delta_u = viewport_u / width;
     Vec3 pixel_delta_v = viewport_v / height;
 
-    std::cout << "delta_u:"  << std::endl;
-    std::cout << pixel_delta_u.x << ", " << pixel_delta_u.y << ", " << pixel_delta_u.z << std::endl;
-
     // Calculate the location of the upper left pixel.
     Vec3 viewport_upper_left = (cameraPosition - Vec3(0, 0, focalLength)) - viewport_u/2 - viewport_v/2;
     Vec3 initial_pixel = viewport_upper_left + (pixel_delta_u + pixel_delta_v) * 0.5;
+
+    std::cout << "inital_pixel:" << std::endl;
+    initial_pixel.print();
 
     unsigned char image[width*height*3];
 
@@ -190,6 +190,8 @@ int main()
     Vec3 U = Vec3(1, 0, 0);
     Vec3 V = Vec3(0, 1, 0);
     Vec3 W = Vec3(0, 0, 1);
+
+    Vec3 lightsource_pos = Vec3(-2,-2,0.4);
     
     for (int y = 0; y < height; y++){
         for (int x = 0; x < width; x++){
@@ -198,15 +200,14 @@ int main()
             auto viewplane_pixel_loc = initial_pixel + (pixel_delta_u * x) + (pixel_delta_v * y);
             Vec3 rayDirection = (viewplane_pixel_loc - cameraPosition);
 
-            // std::cout << "inital_pixel:" << std::endl;
-            // initial_pixel.print();
-
-            rayOrigin = initial_pixel + (pixel_delta_u * x) - (pixel_delta_v * y);
+            rayOrigin = initial_pixel + (pixel_delta_u * x) + (pixel_delta_v * y);
             rayDirection = W*-1;
+
+            // rayDirection = Vec3(0.2, 0, -1);
 
             Ray ray(rayOrigin, rayDirection);
 
-            Color color = traceRay(ray);
+            Color color = traceRay(ray, lightsource_pos);
 
             int idx = (y * width + x) * 3;
             image[idx] = color.r;
@@ -225,7 +226,6 @@ int main()
     {
         std::cout << "Failed to load texture" << std::endl;
     }
-   
 
 
     // render loop

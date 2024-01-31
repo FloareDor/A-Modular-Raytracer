@@ -70,6 +70,11 @@ public:
     double dot(const Vec3& other) const {
         return x * other.x + y * other.y + z * other.z;
     }
+
+    double magnitude() const {
+        return sqrt(x * x + y * y + z * z);
+    }
+
 };
 
 #endif

@@ -26,15 +26,6 @@ double intersect_Sphere(Ray& ray, Vec3 center, double radius) {
 
     double t1 = (-b - (sqrt(discriminant))) / (2 * a);
 
-    // std::cout << "Centre: " << std::endl;
-    // center.print();
-
-    // std::cout << "RayOrigin: " << std::endl;
-    // ray.origin.print();
-
-    // std::cout << "RayDirection: " << std::endl;
-    // ray.direction.print();
-
     // we don't care about negative roots because they are not visible through the viewing plane
     if(discriminant >= 0){
         // std::cout << "OUT: " << t1 << std::endl;
@@ -43,26 +34,68 @@ double intersect_Sphere(Ray& ray, Vec3 center, double radius) {
     return -1.0;
 }
 
+
 double diffuse_shading(double coefficient, double intensity, Vec3 normal, Vec3 lightDirection ){
-    double Ld = coefficient * intensity * std::max(1.0, normal.dot(lightDirection));
+    double Ld = coefficient * intensity * std::max(0.1, normal.dot(lightDirection));
     return Ld;
 }
 
-Color traceRay(Ray& ray) {
-    Vec3 sphere_center = Vec3(0, 2, -2);
-    double t1 = intersect_Sphere(ray, sphere_center, 0.33);
+double blinnPhong_shading(double coefficient, double intensity, Vec3 normal, Vec3 VL, Vec3 VE, double n){
+    // bisector
+    Vec3 VH = (VL + VE) / (VL + VE).magnitude();
+    double Ls = coefficient * intensity * std::pow(std::max(0.1, normal.dot(VH)), n);
+    return Ls;
+}
 
-    Vec3 light_source_pos = Vec3(2, 1, 0.5);
+Color traceRay(Ray& ray, Vec3 lightsource_pos) {
+
+
+    Vec3 sphere1_center = Vec3(-0.5, 0, -1);
+    double sphere1_radius = 0.33;
+
+    Vec3 sphere2_center = Vec3(0.4, 0, -1);
+    double sphere2_radius = 0.33;
+
+    double t1 = intersect_Sphere(ray, sphere1_center, sphere1_radius);
+    double t2 = intersect_Sphere(ray, sphere2_center, sphere2_radius);
 
     if(t1 > 0.0)
     {
         Vec3 intersectionPoint = ray.pointAt(t1);
-        Vec3 normal = (intersectionPoint - sphere_center).unit_vector();
-        double Ld = 0.5 * 1 * std::max(1.0, normal.dot(light_source_pos - intersectionPoint));
-        return Color(0, 108, 69) * Ld;
+        Vec3 normal = (intersectionPoint - sphere1_center).unit_vector();
+        Vec3 VL = (lightsource_pos - intersectionPoint).unit_vector();
+        Vec3 VE = (ray.origin - intersectionPoint).unit_vector();
+
+        double La = 10;
+        double Ld = 65 * std::max(0.1, normal.dot(VL));
+        double Ls = blinnPhong_shading(50,1, normal, VL, VE, 9);
+
+        double L = La + Ld + Ls;
+        // std::cout << La << ',' << Ld << ',' << Ls << std::endl;
+        // Color shadeColor = Color(normal.x + 1, normal.y + 1, normal.z + 1) * Ld * 30;
+        Color shadeColor = Color(1,2,1) * L;
+        return shadeColor;
+        // How do we apply the light color on top of the sphere???
         // return Color(normal.x + 1, normal.y + 1, normal.z + 1) * 100 * Ld;
         // return Color(0, 108, 0);
     }
+
+    if(t2 > 0.0)
+    {
+        Vec3 intersectionPoint = ray.pointAt(t2);
+        Vec3 normal = (intersectionPoint - sphere2_center).unit_vector();
+        Vec3 VL = (lightsource_pos - intersectionPoint).unit_vector();
+        double La = 10;
+        double Ld =  65 * std::max(0.1, normal.dot(VL));
+        double L = La + Ld;
+        // Color shadeColor = Color(normal.x + 1, normal.y + 1, normal.z + 1) * Ld * 30;
+        Color shadeColor = Color(1,2,1) * L;
+        return shadeColor;
+        // How do we apply the light color on top of the sphere???
+        // return Color(normal.x + 1, normal.y + 1, normal.z + 1) * 100 * Ld;
+        // return Color(0, 108, 0);
+    }
+
     return Color(0, 0, 0);
 }
 
