@@ -164,7 +164,7 @@ int main()
     if(height < 1){ height = 1; }
 
     // camera parameters
-    auto focalLength = 1.0;
+    auto focalLength = 0;
     auto viewport_height = 2.0;
     auto viewport_width = viewport_height * (static_cast<double>(width)/height);
     Vec3 cameraPosition = Vec3(0, 0, 0);
@@ -181,7 +181,7 @@ int main()
     std::cout << pixel_delta_u.x << ", " << pixel_delta_u.y << ", " << pixel_delta_u.z << std::endl;
 
     // Calculate the location of the upper left pixel.
-    Vec3 viewport_upper_left = cameraPosition - Vec3(0, 0, focalLength) - viewport_u/2 - viewport_v/2;
+    Vec3 viewport_upper_left = (cameraPosition - Vec3(0, 0, focalLength)) - viewport_u/2 - viewport_v/2;
     Vec3 initial_pixel = viewport_upper_left + (pixel_delta_u + pixel_delta_v) * 0.5;
 
     unsigned char image[width*height*3];
@@ -198,8 +198,11 @@ int main()
             auto viewplane_pixel_loc = initial_pixel + (pixel_delta_u * x) + (pixel_delta_v * y);
             Vec3 rayDirection = (viewplane_pixel_loc - cameraPosition);
 
-            // rayOrigin = initial_pixel + (pixel_delta_u * x) - (pixel_delta_v * y);
-            // rayDirection = Vec3(0, 0, -1);
+            // std::cout << "inital_pixel:" << std::endl;
+            // initial_pixel.print();
+
+            rayOrigin = initial_pixel + (pixel_delta_u * x) - (pixel_delta_v * y);
+            rayDirection = W*-1;
 
             Ray ray(rayOrigin, rayDirection);
 
