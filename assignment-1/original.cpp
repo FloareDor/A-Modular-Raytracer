@@ -164,7 +164,7 @@ int main()
     if(height < 1){ height = 1; }
 
     // camera parameters
-    auto focalLength = 0;
+    auto focalLength = 1.0;
     auto viewport_height = 2.0;
     auto viewport_width = viewport_height * (static_cast<double>(width)/height);
     Vec3 cameraPosition = Vec3(0,0,0);
@@ -200,8 +200,8 @@ int main()
             auto viewplane_pixel_loc = initial_pixel + (pixel_delta_u * x) + (pixel_delta_v * y);
             Vec3 rayDirection = (viewplane_pixel_loc - cameraPosition);
 
-            rayOrigin = initial_pixel + (pixel_delta_u * x) + (pixel_delta_v * y);
-            rayDirection = W*-1;
+            // rayOrigin = initial_pixel + (pixel_delta_u * x) + (pixel_delta_v * y);
+            // rayDirection = W*-1;
 
             // rayDirection = Vec3(0.2, 0, -1);
 
@@ -210,9 +210,9 @@ int main()
             Color color = traceRay(ray, lightsource_pos);
 
             int idx = (y * width + x) * 3;
-            image[idx] = color.r;
-            image[idx+1] = color.g;
-            image[idx+2] = color.b;
+            image[idx] = color.x;
+            image[idx+1] = color.y;
+            image[idx+2] = color.z;
         }
     }
 

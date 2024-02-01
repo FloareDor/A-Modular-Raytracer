@@ -4,6 +4,7 @@
 #include<cmath>
 #include "vec3.h"
 
+
 class Ray {
 public:
     Vec3 origin;
@@ -71,29 +72,41 @@ Color traceRay(Ray& ray, Vec3 lightsource_pos) {
         double Ls = blinnPhong_shading(50,1, normal, VL, VE, 9);
 
         double L = La + Ld + Ls;
-        // std::cout << La << ',' << Ld << ',' << Ls << std::endl;
-        // Color shadeColor = Color(normal.x + 1, normal.y + 1, normal.z + 1) * Ld * 30;
         Color shadeColor = Color(1,2,1) * L;
+        shadeColor = shadeColor.clamp(0.0, 255.0);
         return shadeColor;
-        // How do we apply the light color on top of the sphere???
-        // return Color(normal.x + 1, normal.y + 1, normal.z + 1) * 100 * Ld;
-        // return Color(0, 108, 0);
-    }
-
-    if(t2 > 0.0)
+    }else if(t2 > 0.0)
     {
         Vec3 intersectionPoint = ray.pointAt(t2);
         Vec3 normal = (intersectionPoint - sphere2_center).unit_vector();
         Vec3 VL = (lightsource_pos - intersectionPoint).unit_vector();
         double La = 10;
         double Ld =  65 * std::max(0.1, normal.dot(VL));
+
         double L = La + Ld;
-        // Color shadeColor = Color(normal.x + 1, normal.y + 1, normal.z + 1) * Ld * 30;
         Color shadeColor = Color(1,2,1) * L;
+        shadeColor = shadeColor;
         return shadeColor;
-        // How do we apply the light color on top of the sphere???
-        // return Color(normal.x + 1, normal.y + 1, normal.z + 1) * 100 * Ld;
-        // return Color(0, 108, 0);
+    }else{
+        Vec3 plane_normal = Vec3(0, -0.2, 0); // Normal vector of the plane (pointing upwards)
+        double plane_distance = 0.5; // Distance from the origin along the normal vector
+
+        double t_plane = (plane_distance - ray.origin.y) / ray.direction.y;
+
+        if (t_plane > 0) {
+            Vec3 intersectionPoint = ray.pointAt(t_plane);
+            Vec3 VL = (lightsource_pos - intersectionPoint);
+            Ray reverse_lightray(intersectionPoint, VL);
+            if(intersect_Sphere(reverse_lightray, sphere1_center, sphere1_radius) > 0.0 || intersect_Sphere(reverse_lightray, sphere2_center, sphere2_radius) > 0.0){
+                return Color(33,108,132) * 0.2;
+            }
+
+            // Checkered pattern
+            // bool is_blue = ((int)(intersectionPoint.x * 10) % 2 == 0) ^ ((int)(intersectionPoint.z * 10) % 2 == 0);
+            // Color plane_color = is_blue ? Color(0, 0, 1)*100 : Color(0.5, 0.5, 0.5)*100;
+
+            return Color(33,108,132);
+        }
     }
 
     return Color(0, 0, 0);

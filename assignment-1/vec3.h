@@ -3,29 +3,39 @@
 
 #include <cmath>
 #include <iostream>
+#include <bits/stdc++.h> 
 
-class Color {
-public:
-    double r, g, b;
+// class Color {
+// public:
+//     double r, g, b;
 
-    Color(double r, double g, double b) : r(r), g(g), b(b) {}
+//     Color(double r, double g, double b) : r(r), g(g), b(b) {}
 
-    Color operator+(const Color& other) const {
-        return Color(r + other.r, g + other.g, b + other.b);
-    }
+//     Color operator+(const Color& other) const {
+//         return Color(r + other.r, g + other.g, b + other.b);
+//     }
 
-    Color operator-(const Color& other) const {
-        return Color(r - other.r, g - other.g, b - other.b);
-    }
+//     Color operator-(const Color& other) const {
+//         return Color(r - other.r, g - other.g, b - other.b);
+//     }
 
-    Color operator*(double t) const {
-        return Color(r * t, g * t, b * t);
-    }
+//     Color operator*(double t) const {
+//         return Color(r * t, g * t, b * t);
+//     }
 
-    Color operator/(double t) const {
-        return Color(r / t, g / t, b / t);
-    }
-};
+//     Color operator/(double t) const {
+//         return Color(r / t, g / t, b / t);
+//     }
+
+//     Color unit_vector() const{
+//         double l = length();
+//         return Color(r / l, g / l, b / l);
+//     }
+
+//     double length() const {
+//         return sqrt(x * x + y * y + z * z);
+//     }
+// };
 
 class Vec3 {
 public:
@@ -67,6 +77,9 @@ public:
         double l = length();
         return Vec3(x / l, y / l, z / l);
     }
+    Vec3 clamp(double low, double high) {
+        return Vec3(std::clamp(x,low,high), std::clamp(y,low,high), std::clamp(z,low,high));
+    }
     double dot(const Vec3& other) const {
         return x * other.x + y * other.y + z * other.z;
     }
@@ -76,5 +89,9 @@ public:
     }
 
 };
+
+using Color = Vec3;
+
+using Point3 = Vec3;
 
 #endif
