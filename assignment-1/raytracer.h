@@ -48,48 +48,61 @@ double blinnPhong_shading(double coefficient, double intensity, Vec3 normal, Vec
     return Ls;
 }
 
-Color traceRay(Ray& ray, Vec3 lightsource_pos) {
+Color traceRay(Ray& ray, Vec3 lightsource_pos, bool reflected) {
 
+    Vec3 sphere1_center = Vec3(-3, 0, -12);
+    double sphere1_radius = 3.3;
 
-    Vec3 sphere1_center = Vec3(-0.5, 0, -1);
-    double sphere1_radius = 0.33;
-
-    Vec3 sphere2_center = Vec3(0.4, 0, -1);
-    double sphere2_radius = 0.33;
+    Vec3 sphere2_center = Vec3(12, 0, -9);
+    double sphere2_radius = 3.3;
 
     double t1 = intersect_Sphere(ray, sphere1_center, sphere1_radius);
     double t2 = intersect_Sphere(ray, sphere2_center, sphere2_radius);
 
-    if(t1 > 0.0)
+    if(t1 > 0.0 && (t2 <= 0.0 || t1 < t2))
     {
         Vec3 intersectionPoint = ray.pointAt(t1);
         Vec3 normal = (intersectionPoint - sphere1_center).unit_vector();
         Vec3 VL = (lightsource_pos - intersectionPoint).unit_vector();
         Vec3 VE = (ray.origin - intersectionPoint).unit_vector();
 
-        double La = 10;
-        double Ld = 65 * std::max(0.1, normal.dot(VL));
-        double Ls = blinnPhong_shading(50,1, normal, VL, VE, 9);
+        double La = 30;
+        double Ld = 83 * std::max(0.1, normal.dot(VL));
+        double Ls = blinnPhong_shading(85,1, normal, VL, VE, 9);
 
         double L = La + Ld + Ls;
         Color shadeColor = Color(1,2,1) * L;
         shadeColor = shadeColor.clamp(0.0, 255.0);
+        Ray reverse_lightray(intersectionPoint, VL);
+
+        if(intersect_Sphere(reverse_lightray, sphere2_center, sphere2_radius) > 0.0){
+            return shadeColor * 0.4;
+        }
         return shadeColor;
+
     }else if(t2 > 0.0)
     {
         Vec3 intersectionPoint = ray.pointAt(t2);
         Vec3 normal = (intersectionPoint - sphere2_center).unit_vector();
         Vec3 VL = (lightsource_pos - intersectionPoint).unit_vector();
-        double La = 10;
-        double Ld =  65 * std::max(0.1, normal.dot(VL));
+        Vec3 VE = (ray.origin - intersectionPoint).unit_vector();
 
-        double L = La + Ld;
-        Color shadeColor = Color(1,2,1) * L;
-        shadeColor = shadeColor;
+        double La = 30;
+        double Ld = 83 * std::max(0.1, normal.dot(VL));
+        double Ls = blinnPhong_shading(83,1, normal, VL, VE, 9);
+
+        double L = La + Ld + Ls;
+        Color shadeColor = Color(0.5,1.68,1.52) * L;
+        shadeColor = shadeColor.clamp(0.0, 255.0);
+        Ray reverse_lightray(intersectionPoint, VL);
+        if(intersect_Sphere(reverse_lightray, sphere1_center, sphere1_radius) > 0.0){
+            return shadeColor * 0.4;
+        }
         return shadeColor;
+
     }else{
-        Vec3 plane_normal = Vec3(0, -0.2, 0); // Normal vector of the plane (pointing upwards)
-        double plane_distance = 0.5; // Distance from the origin along the normal vector
+        Vec3 plane_normal = Vec3(0, -1, 0); // Normal vector of the plane (pointing upwards)
+        double plane_distance = 3.3; // Distance from the origin along the normal vector
 
         double t_plane = (plane_distance - ray.origin.y) / ray.direction.y;
 
@@ -97,15 +110,29 @@ Color traceRay(Ray& ray, Vec3 lightsource_pos) {
             Vec3 intersectionPoint = ray.pointAt(t_plane);
             Vec3 VL = (lightsource_pos - intersectionPoint);
             Ray reverse_lightray(intersectionPoint, VL);
-            if(intersect_Sphere(reverse_lightray, sphere1_center, sphere1_radius) > 0.0 || intersect_Sphere(reverse_lightray, sphere2_center, sphere2_radius) > 0.0){
-                return Color(33,108,132) * 0.2;
+            Ray upwards_ray(intersectionPoint, plane_normal);
+
+            Vec3 reflected_dir = (intersectionPoint - plane_normal * (intersectionPoint.dot(plane_normal))*2).unit_vector();
+
+            Ray reflected_ray(intersectionPoint, reflected_dir);
+
+            Color returnColor = Color(219,225,227);
+
+            if(intersect_Sphere(reflected_ray, sphere1_center, sphere1_radius) > 0.0 || intersect_Sphere(reflected_ray, sphere2_center, sphere2_radius) > 0.0){
+                returnColor = (returnColor + traceRay(reflected_ray, lightsource_pos, true) * 0.5).clamp(0,255);
             }
+            // Shadow on plane
+            if(intersect_Sphere(reverse_lightray, sphere1_center, sphere1_radius) >= 0.0 || intersect_Sphere(reverse_lightray, sphere2_center, sphere2_radius) >= 0.0){
+                returnColor = returnColor * 0.4;
+            }
+
+            return returnColor;
 
             // Checkered pattern
             // bool is_blue = ((int)(intersectionPoint.x * 10) % 2 == 0) ^ ((int)(intersectionPoint.z * 10) % 2 == 0);
             // Color plane_color = is_blue ? Color(0, 0, 1)*100 : Color(0.5, 0.5, 0.5)*100;
 
-            return Color(33,108,132);
+            
         }
     }
 

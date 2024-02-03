@@ -12,8 +12,8 @@ void framebuffer_size_callback(GLFWwindow* window, int width, int height);
 void processInput(GLFWwindow *window);
 
 // settings
-const unsigned int SCR_WIDTH = 800;
-const unsigned int SCR_HEIGHT = 800;
+const unsigned int SCR_WIDTH = 1200;
+const unsigned int SCR_HEIGHT = 1200;
 
 
 const char *vertexShaderSource = "#version 330 core\n"
@@ -165,7 +165,7 @@ int main()
 
     // camera parameters
     auto focalLength = 1.0;
-    auto viewport_height = 2.0;
+    auto viewport_height = 1;
     auto viewport_width = viewport_height * (static_cast<double>(width)/height);
     Vec3 cameraPosition = Vec3(0,0,0);
 
@@ -191,14 +191,15 @@ int main()
     Vec3 V = Vec3(0, 1, 0);
     Vec3 W = Vec3(0, 0, 1);
 
-    Vec3 lightsource_pos = Vec3(-2,-2,0.4);
+    Vec3 lightsource_pos = Vec3(20,-20,5);
     
     for (int y = 0; y < height; y++){
         for (int x = 0; x < width; x++){
             
             Vec3 rayOrigin = cameraPosition;
             auto viewplane_pixel_loc = initial_pixel + (pixel_delta_u * x) + (pixel_delta_v * y);
-            Vec3 rayDirection = (viewplane_pixel_loc - cameraPosition);
+            Vec3 rayDirection = (viewplane_pixel_loc - cameraPosition).unit_vector();
+            // rayDirection.print();
 
             // rayOrigin = initial_pixel + (pixel_delta_u * x) + (pixel_delta_v * y);
             // rayDirection = W*-1;
@@ -207,7 +208,7 @@ int main()
 
             Ray ray(rayOrigin, rayDirection);
 
-            Color color = traceRay(ray, lightsource_pos);
+            Color color = traceRay(ray, lightsource_pos, false);
 
             int idx = (y * width + x) * 3;
             image[idx] = color.x;
@@ -221,6 +222,9 @@ int main()
     {
         glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB, width, height, 0, GL_RGB, GL_UNSIGNED_BYTE, data);
         glGenerateMipmap(GL_TEXTURE_2D);
+        GLint maxTextureSize;
+        glGetIntegerv(GL_MAX_TEXTURE_SIZE, &maxTextureSize);
+        std::cout << "Texture dimensions maximum supported size: " << maxTextureSize << std::endl;
     }
     else
     {

@@ -73,7 +73,7 @@ public:
     double length() const {
         return sqrt(x * x + y * y + z * z);
     }
-    Vec3 unit_vector() const{
+    Vec3 unit_vector() const {
         double l = length();
         return Vec3(x / l, y / l, z / l);
     }
