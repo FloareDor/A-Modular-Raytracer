@@ -49,14 +49,27 @@ double blinnPhong_shading(double coefficient, double intensity, Vec3 normal, Vec
     return Ls;
 }
 
+class Sunlight {
+public:
+    Vec3 position;
+    double intensity;
+
+    Sunlight(const Vec3& position, double intensity)
+        : position(position), intensity(intensity) {}
+
+};
+
 class Obj {
 public:
     Color color;
+
     Obj() : color(Color(0, 0, 0)) {}
 
     virtual double hit(const Ray& ray) const = 0;
 
-    virtual Color objColor() const = 0; 
+    virtual Color objColor() const = 0;
+
+    virtual Color shade(const Ray &ray, Sunlight lightsource, double t1) const = 0;
 };
 
 class Sphere : public Obj {
@@ -64,10 +77,11 @@ public:
     Vec3 center;
     double radius;
     Color color;
+    Shader shader;
 
     // Constructor with arguments
-    Sphere(const Vec3& center, double radius, const Color& color)
-        : center(center), radius(radius), color(color) {}
+    Sphere(const Vec3& center, double radius, const Color& color, const Shader& shader)
+        : center(center), radius(radius), color(color), shader(shader) {}
 
     double hit(const Ray& ray) const override {
         // quadratic equation
@@ -91,6 +105,17 @@ public:
         return color;
     }
 
+    Color shade(const Ray& ray, Sunlight lightsource, double t1)const override{
+        Vec3 intersectionPoint = ray.pointAt(t1);
+        Vec3 normal = (intersectionPoint - center).unit_vector();
+        Vec3 VL = (lightsource.position - intersectionPoint).unit_vector();
+        Vec3 VE = (ray.origin - intersectionPoint).unit_vector();
+        // Shader shader;
+        Color postShadingColor = shader.calculateShading(lightsource.intensity, color, intersectionPoint, normal, VL, VE);
+        // std::cout << postShadingColor << std::endl;
+        return postShadingColor;
+    }
+
 };
 
 class Plane : public Obj {
@@ -98,10 +123,11 @@ public:
     Vec3 normal;
     double height;
     Color color;
+    Shader shader;
 
     // Constructor with arguments
-    Plane(const Vec3& normal, double height, const Color& color)
-        : normal(normal), height(height), color(color) {}
+    Plane(const Vec3& normal, double height, const Color& color, const Shader& shader)
+        : normal(normal), height(height), color(color), shader(shader) {}
 
     double hit(const Ray& ray) const override  {
         double t = (height - ray.origin.y) / ray.direction.y;
@@ -112,8 +138,14 @@ public:
         return -1.0;
     }
 
-    Color objColor()const override {
+    Color objColor() const override {
         return color;
+    }
+
+    Color shade(const Ray& ray, Sunlight lightsource, double t1)const override{
+        
+        Color postShadingColor = shader.ambientShading(lightsource.intensity, color/10);
+        return postShadingColor;
     }
    
 };
@@ -123,6 +155,10 @@ private:
     std::vector<std::shared_ptr<Obj>> objects;
 
 public:
+    Sunlight lightsource;
+
+    Objects() : lightsource(Sunlight(Vec3(0, 0, 0),0.0)) {}
+
     void add(const std::shared_ptr<Obj>& obj) {
         objects.push_back(obj);
     }
@@ -142,7 +178,11 @@ public:
             }
         }
         if(hit_anything == true){
-            return closest_object->objColor();
+
+            Color objColor = closest_object->objColor();
+            Color shadedColor = closest_object->shade(ray, lightsource, closest_t);
+            return shadedColor;
+
         }else{
             return Color(0, 0, 0);
         }

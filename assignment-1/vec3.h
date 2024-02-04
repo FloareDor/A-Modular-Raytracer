@@ -34,7 +34,7 @@ public:
         return Vec3(x * t, y * t, z * t);
     }
 
-    Vec3 operator/(double t){
+    Vec3 operator/(double t) const{
         return Vec3(x / t, y / t, z / t);
     }
 
