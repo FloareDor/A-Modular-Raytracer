@@ -141,11 +141,17 @@ public:
     }
 
     Color shade(const Ray& ray, Sunlight lightsource, Vec3 intersectionPoint, Vec3 VL)const override{
-        
         Color postShadingColor = shader.ambientShading(lightsource.intensity, color/10);
         return postShadingColor;
     }
    
+};
+
+struct HitResult {
+    bool hit_anything;
+    double closest_t;
+    std::shared_ptr<Obj> closest_object;
+    
 };
 
 class Objects {
@@ -175,7 +181,23 @@ public:
         return hit_anything;
     }
 
-    Color hit_anything(const Ray& ray, double t_max) const {
+    Color applyShading(const Ray& ray, double t, std::shared_ptr<Obj> closest_object) const {
+        Vec3 intersectionPoint = ray.pointAt(t);
+        Vec3 VL = (lightsource.position - intersectionPoint).unit_vector();
+
+        Color objColor = closest_object->objColor();
+
+        Color shadedColor = closest_object->shade(ray, lightsource, intersectionPoint, VL);
+
+        // shadows
+        Ray reverse_lightray(intersectionPoint, VL);
+        if(hit_anything_for_shadows(reverse_lightray)){
+            return shadedColor * 0.4;
+        }
+        return shadedColor;
+    }
+
+    HitResult hit_anything(const Ray& ray, double t_max) const {
         bool hit_anything = false;
 
         double closest_t = t_max;
@@ -189,31 +211,20 @@ public:
                 hit_anything = true;
             }
         }
-        if(hit_anything == true){
-
-            Vec3 intersectionPoint = ray.pointAt(closest_t);
-            Vec3 VL = (lightsource.position - intersectionPoint).unit_vector();
-
-            Color objColor = closest_object->objColor();
-            Color shadedColor = closest_object->shade(ray, lightsource, intersectionPoint, VL);
-
-            // shadows
-            Ray reverse_lightray(intersectionPoint, VL);
-            if(hit_anything_for_shadows(reverse_lightray)){
-                return shadedColor * 0.4;
-            }
-            return shadedColor;
-
-        }else{
-            return Color(0, 0, 0);
-        }
+        return {hit_anything, closest_t, closest_object};
     }
 
 };
 
+
+
 Color castRay(Ray& ray, Objects world, Vec3 lightsource_pos){
     // Color t = world.hit_anything(ray, 1000);
-    return world.hit_anything(ray, 1000);
+    auto hitResult = world.hit_anything(ray, 1000);
+    if(hitResult.hit_anything){
+        return world.applyShading(ray, hitResult.closest_t, hitResult.closest_object);
+    }
+    return Color(0, 0, 0);
 }
 
 Color traceRay(Ray& ray, Vec3 lightsource_pos, bool reflected) {
@@ -276,7 +287,6 @@ Color traceRay(Ray& ray, Vec3 lightsource_pos, bool reflected) {
             Vec3 intersectionPoint = ray.pointAt(t_plane);
             Vec3 VL = (lightsource_pos - intersectionPoint);
             Ray reverse_lightray(intersectionPoint, VL);
-            Ray upwards_ray(intersectionPoint, plane_normal);
 
             Vec3 reflected_dir = ray.direction -  plane_normal * (ray.direction.dot(plane_normal)) * 2;
 
