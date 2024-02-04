@@ -69,7 +69,7 @@ public:
 
     virtual Color objColor() const = 0;
 
-    virtual Color shade(const Ray &ray, Sunlight lightsource, double t1) const = 0;
+    virtual Color shade(const Ray& ray, Sunlight lightsource, Vec3 intersectionPoint, Vec3 VL) const = 0;
 };
 
 class Sphere : public Obj {
@@ -105,10 +105,8 @@ public:
         return color;
     }
 
-    Color shade(const Ray& ray, Sunlight lightsource, double t1)const override{
-        Vec3 intersectionPoint = ray.pointAt(t1);
+    Color shade(const Ray& ray, Sunlight lightsource, Vec3 intersectionPoint, Vec3 VL)const override{
         Vec3 normal = (intersectionPoint - center).unit_vector();
-        Vec3 VL = (lightsource.position - intersectionPoint).unit_vector();
         Vec3 VE = (ray.origin - intersectionPoint).unit_vector();
         // Shader shader;
         Color postShadingColor = shader.calculateShading(lightsource.intensity, color, intersectionPoint, normal, VL, VE);
@@ -142,7 +140,7 @@ public:
         return color;
     }
 
-    Color shade(const Ray& ray, Sunlight lightsource, double t1)const override{
+    Color shade(const Ray& ray, Sunlight lightsource, Vec3 intersectionPoint, Vec3 VL)const override{
         
         Color postShadingColor = shader.ambientShading(lightsource.intensity, color/10);
         return postShadingColor;
@@ -163,6 +161,20 @@ public:
         objects.push_back(obj);
     }
 
+    bool hit_anything_for_shadows(const Ray& ray) const {
+        bool hit_anything = false;
+
+        for (const auto& object : objects) {
+            double t = object->hit(ray);
+            if (t > 0.001){
+                // std::cout << t << std::endl;
+                hit_anything = true;
+                break;
+            }
+        }
+        return hit_anything;
+    }
+
     Color hit_anything(const Ray& ray, double t_max) const {
         bool hit_anything = false;
 
@@ -179,8 +191,17 @@ public:
         }
         if(hit_anything == true){
 
+            Vec3 intersectionPoint = ray.pointAt(closest_t);
+            Vec3 VL = (lightsource.position - intersectionPoint).unit_vector();
+
             Color objColor = closest_object->objColor();
-            Color shadedColor = closest_object->shade(ray, lightsource, closest_t);
+            Color shadedColor = closest_object->shade(ray, lightsource, intersectionPoint, VL);
+
+            // shadows
+            Ray reverse_lightray(intersectionPoint, VL);
+            if(hit_anything_for_shadows(reverse_lightray)){
+                return shadedColor * 0.4;
+            }
             return shadedColor;
 
         }else{
