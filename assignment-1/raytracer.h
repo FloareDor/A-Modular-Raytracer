@@ -3,6 +3,7 @@
 
 #include<cmath>
 #include "vec3.h"
+#include "shader.h"
 
 
 class Ray {
@@ -48,11 +49,27 @@ double blinnPhong_shading(double coefficient, double intensity, Vec3 normal, Vec
     return Ls;
 }
 
-class Sphere {
+class Obj {
+public:
+    Color color;
+    Obj() : color(Color(0, 0, 0)) {}
+
+    virtual double hit(const Ray& ray) const = 0;
+
+    virtual Color objColor() const = 0; 
+};
+
+class Sphere : public Obj {
+public:
     Vec3 center;
     double radius;
+    Color color;
 
-    double sphere_hit(Ray& ray) {
+    // Constructor with arguments
+    Sphere(const Vec3& center, double radius, const Color& color)
+        : center(center), radius(radius), color(color) {}
+
+    double hit(const Ray& ray) const override {
         // quadratic equation
         double a = ray.direction.dot(ray.direction);
         double b = (ray.direction * 2).dot(ray.origin - center);
@@ -69,18 +86,74 @@ class Sphere {
         }
         return -1.0;
     }
+
+    Color objColor() const override {
+        return color;
+    }
+
+};
+
+class Plane : public Obj {
+public:
+    Vec3 normal;
+    double height;
+    Color color;
+
+    // Constructor with arguments
+    Plane(const Vec3& normal, double height, const Color& color)
+        : normal(normal), height(height), color(color) {}
+
+    double hit(const Ray& ray) const override  {
+        double t = (height - ray.origin.y) / ray.direction.y;
+        if(t>0.0){
+            return t;
+        }
+
+        return -1.0;
+    }
+
+    Color objColor()const override {
+        return color;
+    }
+   
 };
 
 class Objects {
 private:
-    std::vector<Sphere> spheres;
+    std::vector<std::shared_ptr<Obj>> objects;
 
 public:
-    void addSphere(const Sphere& sphere) {
-        spheres.push_back(sphere);
+    void add(const std::shared_ptr<Obj>& obj) {
+        objects.push_back(obj);
     }
-    
+
+    Color hit_anything(const Ray& ray, double t_max) const {
+        bool hit_anything = false;
+
+        double closest_t = t_max;
+        std::shared_ptr<Obj> closest_object;
+
+        for (const auto& object : objects) {
+            double t = object->hit(ray);
+            if (t > 0.0 && t < closest_t){
+                closest_t = t;
+                closest_object = object;
+                hit_anything = true;
+            }
+        }
+        if(hit_anything == true){
+            return closest_object->objColor();
+        }else{
+            return Color(0, 0, 0);
+        }
+    }
+
 };
+
+Color castRay(Ray& ray, Objects world, Vec3 lightsource_pos){
+    // Color t = world.hit_anything(ray, 1000);
+    return world.hit_anything(ray, 1000);
+}
 
 Color traceRay(Ray& ray, Vec3 lightsource_pos, bool reflected) {
 

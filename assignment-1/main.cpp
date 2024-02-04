@@ -201,7 +201,20 @@ int main()
     unsigned char image[width*height*3];
 
     Vec3 lightsource_pos = Vec3(2,-2,0.5);
-    
+
+    Objects world;
+
+    // Sphere s1(Vec3(0, 0, -1.1),0.8,Color(1,2,1));
+    // Sphere s2(Vec3(0.9, 0.5, -0.2), 0.3, Color(0.5, 1.68, 1.52));
+    // Plane  p1(Vec3(0, -1, 0), 0.8, Color(1, 2, 1));
+    std::shared_ptr<Sphere> sphere_ptr1 = std::make_shared<Sphere>(Vec3(0, 0, -1.1),0.8,Color(100,200,100));
+    std::shared_ptr<Sphere> sphere_ptr2 = std::make_shared<Sphere>(Vec3(0.9, 0.5, -0.2), 0.3, Color(50, 168, 152));
+    std::shared_ptr<Plane> plane_ptr = std::make_shared<Plane>(Vec3(0, -1, 0), 0.8, Color(132,132,133));
+
+    world.add(sphere_ptr1);
+    world.add(sphere_ptr2);
+    world.add(plane_ptr);
+
     for (int y = 0; y < height; y++){
         for (int x = 0; x < width; x++){
             
@@ -218,7 +231,8 @@ int main()
 
             Ray ray(rayOrigin, rayDirection);
 
-            Color color = traceRay(ray, lightsource_pos, false);
+            // Color color = traceRay(ray, lightsource_pos, false);
+            Color color = castRay(ray, world, lightsource_pos);
 
             int idx = (y * width + x) * 3;
             image[idx] = color.x;
