@@ -5,38 +5,6 @@
 #include <iostream>
 #include <bits/stdc++.h> 
 
-// class Color {
-// public:
-//     double r, g, b;
-
-//     Color(double r, double g, double b) : r(r), g(g), b(b) {}
-
-//     Color operator+(const Color& other) const {
-//         return Color(r + other.r, g + other.g, b + other.b);
-//     }
-
-//     Color operator-(const Color& other) const {
-//         return Color(r - other.r, g - other.g, b - other.b);
-//     }
-
-//     Color operator*(double t) const {
-//         return Color(r * t, g * t, b * t);
-//     }
-
-//     Color operator/(double t) const {
-//         return Color(r / t, g / t, b / t);
-//     }
-
-//     Color unit_vector() const{
-//         double l = length();
-//         return Color(r / l, g / l, b / l);
-//     }
-
-//     double length() const {
-//         return sqrt(x * x + y * y + z * z);
-//     }
-// };
-
 class Vec3 {
 public:
     double x, y, z;
@@ -47,19 +15,19 @@ public:
         std::cout << '[' << x << ", " << y << ", " << z << ']' << std::endl;
     }
 
-    Vec3& operator=(const Vec3& other) {
-        x = other.x; 
-        y = other.y;
-        z = other.z;
+    Vec3& operator=(const Vec3& v2) {
+        x = v2.x; 
+        y = v2.y;
+        z = v2.z;
         return *this;
     }
 
-    Vec3 operator+(const Vec3& other) const {
-        return Vec3(x + other.x, y + other.y, z + other.z);
+    Vec3 operator+(const Vec3& v2) const {
+        return Vec3(x + v2.x, y + v2.y, z + v2.z);
     }
 
-    Vec3 operator-(const Vec3& other) const {
-        return Vec3(x - other.x, y - other.y, z - other.z);
+    Vec3 operator-(const Vec3& v2) const {
+        return Vec3(x - v2.x, y - v2.y, z - v2.z);
     }
 
     Vec3 operator*(double t) const {
@@ -80,14 +48,17 @@ public:
     Vec3 clamp(double low, double high) {
         return Vec3(std::clamp(x,low,high), std::clamp(y,low,high), std::clamp(z,low,high));
     }
-    double dot(const Vec3& other) const {
-        return x * other.x + y * other.y + z * other.z;
+    double dot(const Vec3& v2) const {
+        return x * v2.x + y * v2.y + z * v2.z;
     }
 
     double magnitude() const {
         return sqrt(x * x + y * y + z * z);
     }
 
+    Vec3 cross(const Vec3& v2) {
+        return Vec3(y * v2.z - v2.y * z, v2.x * z - x * v2.z, x * v2.y - v2.x * y);
+    }
 };
 
 using Color = Vec3;

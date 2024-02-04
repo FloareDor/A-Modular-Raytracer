@@ -164,21 +164,35 @@ int main()
     if(height < 1){ height = 1; }
 
     // camera parameters
-    auto focalLength = 1.0;
-    auto viewport_height = 1;
-    auto viewport_width = viewport_height * (static_cast<double>(width)/height);
-    Vec3 cameraPosition = Vec3(0,0,0);
+    Vec3 cameraPosition = Vec3(0,-1,15);
+    Vec3 camera_up = Vec3(0, -1, 0);
+    Vec3 look_at = Vec3(0, 0, -1);
+    double focalLength = (cameraPosition - look_at).length();
+    // focalLength = 0.0;
+    auto viewplane_height = 6.0;
+    auto viewplane_width = viewplane_height * (static_cast<double>(width)/height);
 
-    // The vectors along the axis(es) of the viewport / viewplane
-    Vec3 viewport_u = Vec3(viewport_width, 0, 0);
-    Vec3 viewport_v = Vec3(0, -viewport_height, 0);
+    // basis vectors for camera
+    Vec3 W = (cameraPosition - look_at).unit_vector();
+    Vec3 U = camera_up.cross(look_at);
+    Vec3 V = W.cross(U);
+
+    // The vectors along the axis(es) of the viewplane
+    // Vec3 viewport_u = Vec3(viewplane_width, 0, 0);
+    // Vec3 viewport_v = Vec3(0, -viewplane_height, 0);
+
+    Vec3 viewport_u = U * viewplane_width;
+    Vec3 viewport_v = V*-1 * viewplane_height;
+    
 
     // The horizontal and vertical delta vectors from pixel to pixel.
     Vec3 pixel_delta_u = viewport_u / width;
     Vec3 pixel_delta_v = viewport_v / height;
 
     // Calculate the location of the upper left pixel.
-    Vec3 viewport_upper_left = (cameraPosition - Vec3(0, 0, focalLength)) - viewport_u/2 - viewport_v/2;
+    // Vec3 viewport_upper_left = (cameraPosition - Vec3(0, 0, focalLength)) - viewport_u/2 - viewport_v/2;
+    Vec3 viewport_upper_left = (cameraPosition - (W*focalLength)) - viewport_u/2 - viewport_v/2;
+
     Vec3 initial_pixel = viewport_upper_left + (pixel_delta_u + pixel_delta_v) * 0.5;
 
     std::cout << "inital_pixel:" << std::endl;
@@ -186,12 +200,7 @@ int main()
 
     unsigned char image[width*height*3];
 
-    // basis vectors
-    Vec3 U = Vec3(1, 0, 0);
-    Vec3 V = Vec3(0, 1, 0);
-    Vec3 W = Vec3(0, 0, 1);
-
-    Vec3 lightsource_pos = Vec3(20,-20,5);
+    Vec3 lightsource_pos = Vec3(2,-2,0.5);
     
     for (int y = 0; y < height; y++){
         for (int x = 0; x < width; x++){
@@ -200,6 +209,7 @@ int main()
             auto viewplane_pixel_loc = initial_pixel + (pixel_delta_u * x) + (pixel_delta_v * y);
             Vec3 rayDirection = (viewplane_pixel_loc - cameraPosition).unit_vector();
             // rayDirection.print();
+
 
             // rayOrigin = initial_pixel + (pixel_delta_u * x) + (pixel_delta_v * y);
             // rayDirection = W*-1;
