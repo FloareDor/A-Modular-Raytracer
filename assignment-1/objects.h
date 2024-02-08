@@ -35,6 +35,57 @@ public:
     virtual double shade(const Ray& ray, Sunlight lightsource, Vec3 intersectionPoint, Vec3 VL) const = 0;
 };
 
+class Triangle : public Obj{
+public:
+    Vec3 vertices[3];
+    Color color;
+    Shader shader;
+    bool glazed;
+
+    // Constructor
+    Triangle(const Vec3 &v0, const Vec3 &v1, const Vec3 &v2, const Color &color)
+        : vertices{v0, v1, v2}, color(color){};
+
+    Color objColor() const override {
+        return color;
+    }
+
+    double hit(const Ray& ray) const override {
+        Vec3 p = ray.origin;
+        Vec3 d = ray.direction;
+        Vec3 a = vertices[0];
+        Vec3 n = a.cross(vertices[2]).unit_vector();
+        double t = ((a - p).dot(n)) / (d.dot(n));
+        if(t > 0.001){
+            return t;
+        }
+        return -1.0;
+    }
+
+    double shade(const Ray& ray, Sunlight lightsource, Vec3 intersectionPoint, Vec3 VL)const override{
+        // Vec3 a = vertices[0];
+        // Vec3 normal = a.cross(vertices[2]).unit_vector();
+        // Vec3 VE = (ray.origin - intersectionPoint).unit_vector();
+        // double postShadingColor = shader.calculateShading(lightsource.intensity, color, intersectionPoint, normal, VL, VE);
+        // return postShadingColor;
+        return 1;
+    }
+
+    Vec3 getCenter() const override {
+        return Vec3((vertices[0].x + vertices[1].x, vertices[2].x)/ 3, (vertices[0].y + vertices[1].y + vertices[2].y)/3, (vertices[0].z + vertices[1].z + vertices[2].z)/3);
+    };
+
+    Vec3 getNormal(const Ray& ray, Vec3 intersectionPoint) const override {
+        Vec3 a = vertices[0];
+        Vec3 normal = a.cross(vertices[2]).unit_vector();
+        return normal;
+    }
+
+    bool isGlazed() const override {
+        return glazed;
+    };
+};
+
 class Sphere : public Obj {
 public:
     Vec3 center;
@@ -118,9 +169,18 @@ public:
     }
 
     double shade(const Ray& ray, Sunlight lightsource, Vec3 intersectionPoint, Vec3 VL)const override{
-        // Color postShadingColor = shader.ambientShading(lightsource.intensity, color/10);
-        return 1;
+        double shadingCoefficient = shader.ambientShading(lightsource.intensity, color/10);
+        return shadingCoefficient;
     }
+
+    // double shade(const Ray& ray, Sunlight lightsource, Vec3 intersectionPoint, Vec3 VL)const override{
+    //     Vec3 normal = (intersectionPoint - Vec3(0,height,0)).unit_vector();
+    //     Vec3 VE = (ray.origin - intersectionPoint).unit_vector();
+    //     // Shader shader;
+    //     double postShadingColor = shader.calculateShading(lightsource.intensity, color, intersectionPoint, normal, VL, VE);
+    //     // std::cout << postShadingColor << std::endl;
+    //     return postShadingColor;
+    // }
 
     Vec3 getCenter() const override {
         return Vec3(0,height,0);
@@ -174,30 +234,39 @@ public:
     }
 
     Color applyShading(const Ray& ray, double t, std::shared_ptr<Obj> closest_object, bool is_reflected_ray) const {
-        Color shadedColor = closest_object->objColor();
+        Color objColor = closest_object->objColor();
         Vec3 intersectionPoint = ray.pointAt(t);
+        Color sum = Color(0, 0, 0);
+
+        if(closest_object->isGlazed() && is_reflected_ray == false) {
+            sum = sum + applyGlaze(ray, t, closest_object);
+        }
+
         for (const auto& light : lights){
             Vec3 VL = (light.position - intersectionPoint).unit_vector();
 
-            shadedColor = (shadedColor * closest_object->shade(ray, light, intersectionPoint, VL)).clamp(0,255);
+            Color shadedColor = (objColor * closest_object->shade(ray, light, intersectionPoint, VL)).clamp(0,255);
 
             // shadows
             Ray reverse_lightray(intersectionPoint, VL);
             if(hit_anything_for_shadows(reverse_lightray)){
                 shadedColor = shadedColor * 0.4;
             }
+            sum = (sum + shadedColor).clamp(0,255);
         }
+        if(objColor.x == 132){
+            sum.print();
+        }
+
 
 
         // if(is_reflected_ray){
         //     shadedColor.print();
         // }
         
-        if(closest_object->isGlazed() && is_reflected_ray == false) {
-            shadedColor = shadedColor + applyGlaze(ray, t, closest_object);
-        }
 
-        return shadedColor.clamp(0,255);
+
+        return sum.clamp(0,255);
     }
 
     HitResult hit_anything(const Ray& ray, double t_max) const {
@@ -229,7 +298,7 @@ public:
         Ray reflected_ray(intersectionPoint, reflected_dir);
 
         Color returnColor = closest_object->objColor();
-        returnColor = Color(0, 0, 0);
+        // returnColor = Color(0, 0, 0);
 
         if(hit_anything_for_shadows(reflected_ray)){
             Color glazeColor = (castRay(reflected_ray, *this, lightsource.position, true) * 0.4).clamp(0, 255);

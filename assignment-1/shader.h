@@ -10,10 +10,10 @@ public:
     // Calculate shading given intersection point, normal, light direction, and view direction
     static double calculateShading(double lightIntensity, Color objectColor, const Vec3& intersectionPoint, const Vec3& normal, const Vec3& VL, const Vec3& VE) {
 
-		double ambientCoefficient = 1.5;
-        double diffuseCoefficient = 8.0;
-        double specularCoefficient = 2.5; 
-        double shininess = 35.0;         
+		double ambientCoefficient = 0.4;
+        double diffuseCoefficient = 12;
+        double specularCoefficient = 6; 
+        double shininess = 65.0;         
 
 		// ambient shading model
 		double ambientIntensity = ambientCoefficient * lightIntensity;
@@ -27,15 +27,15 @@ public:
         return (ambientIntensity + diffuseIntensity + specularIntensity);
     }
 
-    static Color ambientShading(double lightIntensity, Color objectColor) {
+    static double ambientShading(double lightIntensity, Color objectColor) {
 
-		double ambientCoefficient = 1.5;  // Ambient intensity
+		double ambientCoefficient = 0.4;  // Ambient intensity
 
 		// ambient shading model
 		double ambientIntensity = ambientCoefficient * lightIntensity;
 
 
-        return (objectColor * (ambientIntensity)).clamp(0.0, 255.0);
+        return ambientIntensity;
     }
 
     static Color diffuseShading(double lightIntensity, Color objectColor, const Vec3& intersectionPoint, const Vec3& normal, const Vec3& VL, const Vec3& VE) {

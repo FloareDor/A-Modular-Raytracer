@@ -166,7 +166,7 @@ int main()
     if(height < 1){ height = 1; }
 
     // camera parameters
-    Vec3 cameraPosition = Vec3(0,-1,15);
+    Vec3 cameraPosition = Vec3(0,-1,10);
     Vec3 camera_up = Vec3(0, -1, 0);
     Vec3 look_at = Vec3(0, 0, -1);
     double focalLength = (cameraPosition - look_at).length();
@@ -180,27 +180,27 @@ int main()
     Vec3 V = W.cross(U);
 
     // The vectors along the axis(es) of the viewplane
-    // Vec3 viewport_u = Vec3(viewplane_width, 0, 0);
-    // Vec3 viewport_v = Vec3(0, -viewplane_height, 0);
+    // Vec3 viewplane_u = Vec3(viewplane_width, 0, 0);
+    // Vec3 viewplane_v = Vec3(0, -viewplane_height, 0);
 
-    Vec3 viewport_u = U * viewplane_width;
-    Vec3 viewport_v = V*-1 * viewplane_height;
+    Vec3 viewplane_u = U * viewplane_width;
+    Vec3 viewplane_v = V*-1 * viewplane_height;
     
 
     // The horizontal and vertical delta vectors from pixel to pixel.
-    Vec3 pixel_delta_u = viewport_u / width;
-    Vec3 pixel_delta_v = viewport_v / height;
+    Vec3 pixel_delta_u = viewplane_u / width;
+    Vec3 pixel_delta_v = viewplane_v / height;
 
     // Calculate the location of the upper left pixel.
-    // Vec3 viewport_upper_left = (cameraPosition - Vec3(0, 0, focalLength)) - viewport_u/2 - viewport_v/2;
-    Vec3 viewport_upper_left = (cameraPosition - (W*focalLength)) - viewport_u/2 - viewport_v/2;
+    // Vec3 viewplane_upper_left = (cameraPosition - Vec3(0, 0, focalLength)) - viewplane_u/2 - viewplane_v/2;
+    Vec3 viewplane_upper_left = (cameraPosition - (W*focalLength)) - viewplane_u/2 - viewplane_v/2;
 
-    Vec3 initial_pixel = viewport_upper_left + (pixel_delta_u + pixel_delta_v) * 0.5;
+    Vec3 initial_pixel = viewplane_upper_left + (pixel_delta_u + pixel_delta_v) * 0.5;
 
     std::cout << "inital_pixel:" << std::endl;
     initial_pixel.print();
 
-    unsigned char image[width*height*3];
+    unsigned char* image = new unsigned char[width*height*3]; // to avoid stack overflow
 
     Vec3 lightsource_pos = Vec3(2,-2,0.5);
 
@@ -209,22 +209,29 @@ int main()
     // Sphere s1(Vec3(0, 0, -1.1),0.8,Color(1,2,1));
     // Sphere s2(Vec3(0.9, 0.5, -0.2), 0.3, Color(0.5, 1.68, 1.52));
     // Plane  p1(Vec3(0, -1, 0), 0.8, Color(1, 2, 1));
-
+    
     Shader shader;
-    std::shared_ptr<Sphere> sphere_ptr1 = std::make_shared<Sphere>(Vec3(0, 0, -1.1), 0.8, Color(1, 2, 1), shader, false);
-    std::shared_ptr<Sphere> sphere_ptr2 = std::make_shared<Sphere>(Vec3(0.9, 0.5, -0.2), 0.3, Color(0.5, 1.68, 1.52), shader, false);
+    std::shared_ptr<Sphere> sphere_ptr1 = std::make_shared<Sphere>(Vec3(0, 0, -1.1), 0.8, Color(1.00, 0.78, 0.851), shader, false);
+    std::shared_ptr<Sphere> sphere_ptr2 = std::make_shared<Sphere>(Vec3(0.9, -1.2, -0.2), 0.3, Color(0.5, 1.68, 1.52), shader, false);
     std::shared_ptr<Sphere> sphere_ptr3 = std::make_shared<Sphere>(Vec3(0, 0.4, -0.1), 0.4, Color(1, 2, 1), shader, false);
-    std::shared_ptr<Plane>  plane_ptr   = std::make_shared<Plane>(Vec3(0, -1, 0), 0.8, Color(132,132,133), shader, true);
+    std::shared_ptr<Plane>  plane_ptr   = std::make_shared<Plane>(Vec3(0, -1, 0), 0.8, Color(10.32,10.32,10.33), shader, true);
+    std::shared_ptr<Triangle>  triangle1_ptr   = std::make_shared<Triangle>(Vec3(0, 0, -1), Vec3(0.5, -1, -1), Vec3(0.5, -1, -1), Color(133, 200, 69));
+    
 
-    Sunlight sunlight1(Vec3(-2, -2, 1), 10);
-    Sunlight sunlight2(Vec3(2, -2, 1), 10);
+    Sunlight sunlight1(Vec3(-3, -2, 0), 11);
+    Sunlight sunlight2(Vec3(3, -2, 0), 6);
+    Sunlight sunlight3(Vec3(0, -2, 3), 6);
+    Sunlight sunlight4(Vec3(0, -2, -3), 6);
     
     world.addObject(sphere_ptr1);
     world.addObject(sphere_ptr2);
     world.addObject(plane_ptr);
-    world.lightsource = sunlight1;
+    // world.addObject(triangle1_ptr);
+    // world.lightsource = sunlight1;
     world.addLight(sunlight1);
     // world.addLight(sunlight2);
+    // world.addLight(sunlight3);
+    // world.addLight(sunlight4);
 
     for (int y = 0; y < height; y++){
         for (int x = 0; x < width; x++){
