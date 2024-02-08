@@ -8,6 +8,7 @@
 #include "raytracer.h"
 #include "vec3.h"
 #include "shader.h"
+#include "objects.h"
 
 void framebuffer_size_callback(GLFWwindow* window, int width, int height);
 void processInput(GLFWwindow *window);
@@ -210,16 +211,20 @@ int main()
     // Plane  p1(Vec3(0, -1, 0), 0.8, Color(1, 2, 1));
 
     Shader shader;
-    std::shared_ptr<Sphere> sphere_ptr1 = std::make_shared<Sphere>(Vec3(0, 0, -1.1), 0.8, Color(1, 2, 1), shader);
-    std::shared_ptr<Sphere> sphere_ptr2 = std::make_shared<Sphere>(Vec3(0.9, 0.5, -0.2), 0.3, Color(0.5, 1.68, 1.52), shader);
-    std::shared_ptr<Plane> plane_ptr = std::make_shared<Plane>(Vec3(0, -1, 0), 0.8, Color(132,132,133), shader);
+    std::shared_ptr<Sphere> sphere_ptr1 = std::make_shared<Sphere>(Vec3(0, 0, -1.1), 0.8, Color(1, 2, 1), shader, false);
+    std::shared_ptr<Sphere> sphere_ptr2 = std::make_shared<Sphere>(Vec3(0.9, 0.5, -0.2), 0.3, Color(0.5, 1.68, 1.52), shader, false);
+    std::shared_ptr<Sphere> sphere_ptr3 = std::make_shared<Sphere>(Vec3(0, 0.4, -0.1), 0.4, Color(1, 2, 1), shader, false);
+    std::shared_ptr<Plane>  plane_ptr   = std::make_shared<Plane>(Vec3(0, -1, 0), 0.8, Color(132,132,133), shader, true);
 
-    Sunlight sunlight(Vec3(2, -2, 0.5), 10);
+    Sunlight sunlight1(Vec3(-2, -2, 1), 10);
+    Sunlight sunlight2(Vec3(2, -2, 1), 10);
     
-    world.add(sphere_ptr1);
-    world.add(sphere_ptr2);
-    world.add(plane_ptr);
-    world.lightsource = sunlight;
+    world.addObject(sphere_ptr1);
+    world.addObject(sphere_ptr2);
+    world.addObject(plane_ptr);
+    world.lightsource = sunlight1;
+    world.addLight(sunlight1);
+    // world.addLight(sunlight2);
 
     for (int y = 0; y < height; y++){
         for (int x = 0; x < width; x++){
@@ -238,7 +243,7 @@ int main()
             Ray ray(rayOrigin, rayDirection);
 
             // Color color = traceRay(ray, lightsource_pos, false);
-            Color color = castRay(ray, world, lightsource_pos);
+            Color color = world.castRay(ray, world, lightsource_pos, false);
 
             int idx = (y * width + x) * 3;
             image[idx] = color.x;
