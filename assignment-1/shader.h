@@ -10,26 +10,26 @@ public:
     // Calculate shading given intersection point, normal, light direction, and view direction
     static double calculateShading(double lightIntensity, Color objectColor, const Vec3& intersectionPoint, const Vec3& normal, const Vec3& VL, const Vec3& VE) {
 
-		double ambientCoefficient = 0.4;
+		double ambientCoefficient = 0.6;
         double diffuseCoefficient = 12;
-        double specularCoefficient = 6; 
+        double specularCoefficient = 9; 
         double shininess = 65.0;         
 
 		// ambient shading model
 		double ambientIntensity = ambientCoefficient * lightIntensity;
         // Calculate diffuse component
-        double diffuseIntensity = diffuseCoefficient * lightIntensity * std::max(0.1, normal.dot(VL));
+        double diffuseIntensity = diffuseCoefficient * lightIntensity * std::max(0.0, normal.dot(VL));
 
         // Calculate specular component using Blinn-Phong model
 		Vec3 VH = (VL + VE) / (VL + VE).magnitude();
-		double specularIntensity = specularCoefficient * lightIntensity * std::pow(std::max(0.1, normal.dot(VH)), shininess);
+		double specularIntensity = specularCoefficient * lightIntensity * std::pow(std::max(0.0, normal.dot(VH)), shininess);
 
         return (ambientIntensity + diffuseIntensity + specularIntensity);
     }
 
     static double ambientShading(double lightIntensity, Color objectColor) {
 
-		double ambientCoefficient = 0.4;  // Ambient intensity
+		double ambientCoefficient = 0.6;  // Ambient intensity
 
 		// ambient shading model
 		double ambientIntensity = ambientCoefficient * lightIntensity;

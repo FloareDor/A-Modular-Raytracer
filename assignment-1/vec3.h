@@ -3,7 +3,9 @@
 
 #include <cmath>
 #include <iostream>
-#include <bits/stdc++.h> 
+#include <bits/stdc++.h>
+#include <array>
+
 
 class Vec3 {
 public:

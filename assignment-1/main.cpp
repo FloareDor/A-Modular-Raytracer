@@ -39,7 +39,147 @@ const char *fragmentShaderSource = "#version 330 core\n"
     "void main()\n"
     "{\n"
     "   FragColor = texture(texture1, TexCoord);\n"
-    "}\n\0";    
+    "}\n\0";
+
+// Define function to save image to PPM file
+void saveImageToPPM(const char* filename, unsigned char* imageData, const int width, const int height) {
+    std::ofstream file(filename);
+    if (!file.is_open()) {
+        std::cerr << "Error: Unable to open file for writing: " << filename << std::endl;
+        return;
+    }
+
+    // Write PPM header
+    file << "P3\n" << width << " " << height << "\n255\n";
+
+    // Write pixel values
+    for (int i = 0; i < width * height * 3; i += 3) {
+        file << static_cast<int>(imageData[i]) << " " << static_cast<int>(imageData[i + 1]) << " " << static_cast<int>(imageData[i + 2]) << "\n";
+    }
+
+    file.close();
+}
+
+void setupCameraAndTexture(bool orthogonal, int width, Vec3 cameraPosition, Vec3 camera_up, Vec3 look_at){
+    
+    auto aspect_ratio = 16.0 / 9.0;
+
+    int height = static_cast<int>( width / aspect_ratio);
+    if(height < 1){ height = 1; }
+
+    // camera parameters
+    // Vec3 cameraPosition = Vec3(0,-1,10);
+    // cameraPosition = Vec3(4, -1, 5);
+    // Vec3 camera_up = Vec3(0, -1, 0);
+    // Vec3 look_at = Vec3(0, 0, -1);
+    
+
+    auto viewplane_height = 4.2;
+    auto viewplane_width = viewplane_height * (static_cast<double>(width)/height);
+
+    // basis vectors for camera
+    Vec3 W = (cameraPosition - look_at).unit_vector();
+    Vec3 U = camera_up.cross(look_at);
+    Vec3 V = W.cross(U);
+
+    // The vectors along the axis(es) of the viewplane
+    // Vec3 viewplane_u = Vec3(viewplane_width, 0, 0);
+    // Vec3 viewplane_v = Vec3(0, -viewplane_height, 0);
+
+    Vec3 viewplane_u = U * viewplane_width;
+    Vec3 viewplane_v = V*-1 * viewplane_height;
+    
+
+    // The horizontal and vertical delta vectors from pixel to pixel.
+    Vec3 pixel_delta_u = viewplane_u / width;
+    Vec3 pixel_delta_v = viewplane_v / height;
+
+    double focalLength = (cameraPosition - look_at).length();
+    if(orthogonal){
+        focalLength = 0.0;
+    }
+    // Calculate the location of the upper left pixel.
+    // Vec3 viewplane_upper_left = (cameraPosition - Vec3(0, 0, focalLength)) - viewplane_u/2 - viewplane_v/2;
+    Vec3 viewplane_upper_left = (cameraPosition - (W*focalLength)) - viewplane_u/2 - viewplane_v/2;
+
+    Vec3 initial_pixel = viewplane_upper_left + (pixel_delta_u + pixel_delta_v) * 0.5;
+
+    // std::cout << "inital_pixel:" << std::endl;
+    // initial_pixel.print();
+
+    unsigned char* image = new unsigned char[width*height*3]; // to avoid stack overflow
+
+    Vec3 lightsource_pos = Vec3(2,-2,0.5);
+
+    Objects world;
+
+    // Sphere s1(Vec3(0, 0, -1.1),0.8,Color(1,2,1));
+    // Sphere s2(Vec3(0.9, 0.5, -0.2), 0.3, Color(0.5, 1.68, 1.52));
+    // Plane  p1(Vec3(0, -1, 0), 0.8, Color(1, 2, 1));
+    
+    Shader shader;
+    std::shared_ptr<Sphere> sphere_ptr1 = std::make_shared<Sphere>(Vec3(1, 0, -2), 0.8, Color(2.44,1.94,1.94)*0.75, shader, false);
+    std::shared_ptr<Sphere> sphere_ptr2 = std::make_shared<Sphere>(Vec3(2, 0.2, -0.5), 0.3, Color(0.70, 1.50, 1.84), shader, false);
+    // std::shared_ptr<Sphere> sphere_ptr3 = std::make_shared<Sphere>(Vec3(0, 0.4, -0.1), 0.4, Color(1, 2, 1), shader, false);
+    std::shared_ptr<Plane>  plane_ptr   = std::make_shared<Plane>(Vec3(0, -1, 0), 0.8, Color(0.05, 0.05, 0.05)*10, shader, true); // 10.32,10.32,10.33
+    // std::shared_ptr<Triangle>  triangle1_ptr   = std::make_shared<Triangle>(Vec3(0, -0.4, -0.5), Vec3(-400, -400, -12), Vec3(400, -400, -12), Color(1.33, 2.00, 0.69), shader, false);
+    std::shared_ptr<Tetrahedron>  tetrahedron   = std::make_shared<Tetrahedron>(Vec3(-1, 0.6, -0.2), Vec3(0, 0.6, -0.8), Vec3(-2, 0.6, -0.8), Vec3(-1, -0.35, -0.5), Color(0.70, 1.84, 1.61), shader, true); // Color(1.33, 2.00, 0.69)
+    
+
+    Sunlight sunlight1(Vec3(-3, -2, 1), 12);
+    Sunlight sunlight2(Vec3(3, -2, 0), 8);
+    Sunlight sunlight3(Vec3(0, -2, 3), 6);
+    Sunlight sunlight4(Vec3(0, -2, -3), 6);
+    
+    world.addObject(sphere_ptr1);
+    world.addObject(sphere_ptr2);
+    world.addObject(plane_ptr);
+    // world.addObject(triangle1_ptr);
+    world.addObject(tetrahedron);
+    // world.lightsource = sunlight1;
+    world.addLight(sunlight1);
+    // world.addLight(sunlight2);
+    // world.addLight(sunlight3);
+    // world.addLight(sunlight4);
+
+    for (int y = 0; y < height; y++){
+        for (int x = 0; x < width; x++){
+            
+            Vec3 rayOrigin = cameraPosition;
+            auto viewplane_pixel_loc = initial_pixel + (pixel_delta_u * x) + (pixel_delta_v * y);
+            Vec3 rayDirection = (viewplane_pixel_loc - cameraPosition).unit_vector();
+            // rayDirection.print();
+
+            if(orthogonal){
+                rayOrigin = initial_pixel + (pixel_delta_u * x) + (pixel_delta_v * y);
+                rayDirection = W*-1;
+            }
+
+            // rayDirection = Vec3(0.2, 0, -1);
+
+            Ray ray(rayOrigin, rayDirection);
+
+            // Color color = traceRay(ray, lightsource_pos, false);
+            Color color = world.castRay(ray, world, lightsource_pos, false);
+
+            int idx = (y * width + x) * 3;
+            image[idx] = color.x;
+            image[idx+1] = color.y;
+            image[idx+2] = color.z;
+        }
+    }
+
+    unsigned char *data = &image[0];
+
+    if (data)
+    {
+        glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB, width, height, 0, GL_RGB, GL_UNSIGNED_BYTE, data);
+        glGenerateMipmap(GL_TEXTURE_2D);
+        GLint maxTextureSize;
+        glGetIntegerv(GL_MAX_TEXTURE_SIZE, &maxTextureSize);
+        // std::cout << "Texture dimensions maximum supported size: " << maxTextureSize << std::endl;
+    }
+} 
 
 int main()
 {
@@ -159,120 +299,7 @@ int main()
     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST_MIPMAP_LINEAR);
     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
 
-    auto aspect_ratio = 16.0 / 9.0;
-    int width = 1000;
-
-    int height = static_cast<int>( width / aspect_ratio);
-    if(height < 1){ height = 1; }
-
-    // camera parameters
-    Vec3 cameraPosition = Vec3(0,-1,10);
-    Vec3 camera_up = Vec3(0, -1, 0);
-    Vec3 look_at = Vec3(0, 0, -1);
-    double focalLength = (cameraPosition - look_at).length();
-    // focalLength = 0.0;
-    auto viewplane_height = 6.0;
-    auto viewplane_width = viewplane_height * (static_cast<double>(width)/height);
-
-    // basis vectors for camera
-    Vec3 W = (cameraPosition - look_at).unit_vector();
-    Vec3 U = camera_up.cross(look_at);
-    Vec3 V = W.cross(U);
-
-    // The vectors along the axis(es) of the viewplane
-    // Vec3 viewplane_u = Vec3(viewplane_width, 0, 0);
-    // Vec3 viewplane_v = Vec3(0, -viewplane_height, 0);
-
-    Vec3 viewplane_u = U * viewplane_width;
-    Vec3 viewplane_v = V*-1 * viewplane_height;
-    
-
-    // The horizontal and vertical delta vectors from pixel to pixel.
-    Vec3 pixel_delta_u = viewplane_u / width;
-    Vec3 pixel_delta_v = viewplane_v / height;
-
-    // Calculate the location of the upper left pixel.
-    // Vec3 viewplane_upper_left = (cameraPosition - Vec3(0, 0, focalLength)) - viewplane_u/2 - viewplane_v/2;
-    Vec3 viewplane_upper_left = (cameraPosition - (W*focalLength)) - viewplane_u/2 - viewplane_v/2;
-
-    Vec3 initial_pixel = viewplane_upper_left + (pixel_delta_u + pixel_delta_v) * 0.5;
-
-    std::cout << "inital_pixel:" << std::endl;
-    initial_pixel.print();
-
-    unsigned char* image = new unsigned char[width*height*3]; // to avoid stack overflow
-
-    Vec3 lightsource_pos = Vec3(2,-2,0.5);
-
-    Objects world;
-
-    // Sphere s1(Vec3(0, 0, -1.1),0.8,Color(1,2,1));
-    // Sphere s2(Vec3(0.9, 0.5, -0.2), 0.3, Color(0.5, 1.68, 1.52));
-    // Plane  p1(Vec3(0, -1, 0), 0.8, Color(1, 2, 1));
-    
-    Shader shader;
-    std::shared_ptr<Sphere> sphere_ptr1 = std::make_shared<Sphere>(Vec3(0, 0, -1.1), 0.8, Color(1.00, 0.78, 0.851), shader, false);
-    std::shared_ptr<Sphere> sphere_ptr2 = std::make_shared<Sphere>(Vec3(0.9, -1.2, -0.2), 0.3, Color(0.5, 1.68, 1.52), shader, false);
-    std::shared_ptr<Sphere> sphere_ptr3 = std::make_shared<Sphere>(Vec3(0, 0.4, -0.1), 0.4, Color(1, 2, 1), shader, false);
-    std::shared_ptr<Plane>  plane_ptr   = std::make_shared<Plane>(Vec3(0, -1, 0), 0.8, Color(10.32,10.32,10.33), shader, true);
-    std::shared_ptr<Triangle>  triangle1_ptr   = std::make_shared<Triangle>(Vec3(0, 0, -1), Vec3(0.5, -1, -1), Vec3(0.5, -1, -1), Color(133, 200, 69));
-    
-
-    Sunlight sunlight1(Vec3(-3, -2, 0), 11);
-    Sunlight sunlight2(Vec3(3, -2, 0), 6);
-    Sunlight sunlight3(Vec3(0, -2, 3), 6);
-    Sunlight sunlight4(Vec3(0, -2, -3), 6);
-    
-    world.addObject(sphere_ptr1);
-    world.addObject(sphere_ptr2);
-    world.addObject(plane_ptr);
-    // world.addObject(triangle1_ptr);
-    // world.lightsource = sunlight1;
-    world.addLight(sunlight1);
-    // world.addLight(sunlight2);
-    // world.addLight(sunlight3);
-    // world.addLight(sunlight4);
-
-    for (int y = 0; y < height; y++){
-        for (int x = 0; x < width; x++){
-            
-            Vec3 rayOrigin = cameraPosition;
-            auto viewplane_pixel_loc = initial_pixel + (pixel_delta_u * x) + (pixel_delta_v * y);
-            Vec3 rayDirection = (viewplane_pixel_loc - cameraPosition).unit_vector();
-            // rayDirection.print();
-
-
-            // rayOrigin = initial_pixel + (pixel_delta_u * x) + (pixel_delta_v * y);
-            // rayDirection = W*-1;
-
-            // rayDirection = Vec3(0.2, 0, -1);
-
-            Ray ray(rayOrigin, rayDirection);
-
-            // Color color = traceRay(ray, lightsource_pos, false);
-            Color color = world.castRay(ray, world, lightsource_pos, false);
-
-            int idx = (y * width + x) * 3;
-            image[idx] = color.x;
-            image[idx+1] = color.y;
-            image[idx+2] = color.z;
-        }
-    }
-
-    unsigned char *data = &image[0];
-    if (data)
-    {
-        glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB, width, height, 0, GL_RGB, GL_UNSIGNED_BYTE, data);
-        glGenerateMipmap(GL_TEXTURE_2D);
-        GLint maxTextureSize;
-        glGetIntegerv(GL_MAX_TEXTURE_SIZE, &maxTextureSize);
-        std::cout << "Texture dimensions maximum supported size: " << maxTextureSize << std::endl;
-    }
-    else
-    {
-        std::cout << "Failed to load texture" << std::endl;
-    }
-
+    setupCameraAndTexture(false, 400, Vec3(4, -1, 5), Vec3(0, -1, 0), Vec3(0, 0, -1));
 
     // render loop
     // -----------
@@ -280,6 +307,7 @@ int main()
     {
         // input
         // -----
+        bool orthogonal = false;
         processInput(window);
 
         // render
@@ -312,6 +340,11 @@ int main()
     glfwTerminate();
     return 0;
 }
+double x = 4;
+double z = 5;
+double y = -1;
+double angle = 0.05;
+bool orthogonal = false;
 
 // process all input: query GLFW whether relevant keys are pressed/released this frame and react accordingly
 // ---------------------------------------------------------------------------------------------------------
@@ -319,6 +352,39 @@ void processInput(GLFWwindow *window)
 {
     if (glfwGetKey(window, GLFW_KEY_ESCAPE) == GLFW_PRESS)
         glfwSetWindowShouldClose(window, true);
+
+     // Check if the 'O' key is pressed
+    if (glfwGetKey(window, GLFW_KEY_O) == GLFW_PRESS)
+    {
+        orthogonal = true;
+        std::cout << "Running with orthogonal set to true!" << std::endl;
+        setupCameraAndTexture(orthogonal, 400, Vec3(4, -1, 5), Vec3(0, -1, 0), Vec3(0, 0, -1));
+    }
+
+    // Check if the 'P' key is pressed
+    if (glfwGetKey(window, GLFW_KEY_P) == GLFW_PRESS)
+    {
+        orthogonal = false;
+        std::cout << "Running with orthogonal set to false!" << std::endl;
+        setupCameraAndTexture(orthogonal, 400, Vec3(4, -1, 5), Vec3(0, -1, 0), Vec3(0, 0, -1));
+    }
+    
+    // if (glfwGetKey(window, GLFW_KEY_N) != GLFW_PRESS)
+    // {
+    //     // Incrementing the angle for the circular motion
+    //     angle += 0.05;
+
+    //     Vec3 spherebro(2, 0.2, -0.5);
+
+    //     // Calculate the new x and z coordinates based on the angle
+    //     x = 2 + 5 * sin(angle);
+    //     z = -0.5 + 5 * cos(angle);
+    //     // std::cout << "next frame!" << std::endl;
+    //     setupCameraAndTexture(orthogonal, 300, Vec3(x, y, z), Vec3(0, -1, 0), Vec3(0, 0, -1));
+    //     x = x + 1;
+    //     z = z - 0.5;
+    //     // y = y + 1;
+    // }
 }
 
 // glfw: whenever the window size changed (by OS or user resize) this callback function executes
