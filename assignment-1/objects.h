@@ -68,7 +68,7 @@ public:
                 // compute the plane's normal
         Vec3 ab = b - a;
         Vec3 ac = c - a;
-        // no need to normalize
+        // no need to unit_vector
         Vec3 N = ab.cross(ac); // N
         float area2 = N.length();
     
@@ -285,10 +285,19 @@ public:
     };
 
     Vec3 getNormal(const Ray& ray, Vec3 intersectionPoint) const override {
-        Vec3 a = a;
-        Vec3 normal = a.cross(c).unit_vector();
         return Vec3(0, 0, 0);
-        return normal;
+    // // Determine which face the intersection point belongs to
+    // if (isPointInTriangle(intersectionPoint, a, b, c)) {
+    //     return (b - a).cross(c - a).unit_vector();;
+    // } else if (isPointInTriangle(intersectionPoint, a, c, d)) {
+    //     return (c - a).cross(d - a).unit_vector();;
+    // } else if (isPointInTriangle(intersectionPoint, a, d, b)) {
+    //     return (d - a).cross(b - a).unit_vector();;
+    // } else {
+    //     return (b - a).cross(d - b).unit_vector();;
+    // }
+    // }
+    
     }
 
     bool isGlazed() const override {
@@ -379,26 +388,17 @@ public:
         return color;
     }
 
-    // double shade(const Ray& ray, Sunlight lightsource, Vec3 intersectionPoint, Vec3 normal, Vec3 VL)const override{
-    //     Vec3 VE = (ray.origin - intersectionPoint).unit_vector();
-    //     // Shader shader;
-    //     double postShadingColor = shader.calculateShading(lightsource.intensity, color, intersectionPoint, normal, VL, VE);
-    //     // std::cout << postShadingColor << std::endl;
-    //     return postShadingColor;
-    // }
-
     double shade(const Ray& ray, Sunlight lightsource, Vec3 intersectionPoint, Vec3 normal, Vec3 VL)const override{
-        double shadingCoefficient = shader.ambientShading(lightsource.intensity, color/10);
-        return shadingCoefficient;
-    }
+            Vec3 VE = (ray.origin - intersectionPoint).unit_vector();
+            // Shader shader;
+            double postShadingColor = shader.calculateShading(lightsource.intensity, color, intersectionPoint, normal, VL, VE);
+            // std::cout << postShadingColor << std::endl;
+            return postShadingColor;
+        }
 
-    // double shade(const Ray& ray, Sunlight lightsource, Vec3 intersectionPoint, Vec3 VL)const override{
-    //     Vec3 normal = (intersectionPoint - Vec3(0,height,0)).unit_vector();
-    //     Vec3 VE = (ray.origin - intersectionPoint).unit_vector();
-    //     // Shader shader;
-    //     double postShadingColor = shader.calculateShading(lightsource.intensity, color, intersectionPoint, normal, VL, VE);
-    //     // std::cout << postShadingColor << std::endl;
-    //     return postShadingColor;
+    // double shade(const Ray& ray, Sunlight lightsource, Vec3 intersectionPoint, Vec3 normal, Vec3 VL)const override{
+    //     double shadingCoefficient = shader.ambientShading(lightsource.intensity, color/10);
+    //     return shadingCoefficient;
     // }
 
     Vec3 getCenter() const override {
@@ -453,7 +453,7 @@ public:
         Color sum = Color(0, 0, 0);
 
         if(closest_object->isGlazed() && is_reflected_ray == false) {
-            sum = sum + applyGlaze(ray, t, closest_object);
+            sum = sum + applyGlaze(ray, t, closest_object, normal);
         }
 
         for (const auto& light : lights){
@@ -502,14 +502,9 @@ public:
         return {hit_anything, closest_t, closest_object, surface_normal};
     }
 
-    Color applyGlaze( const Ray& ray, double t, std::shared_ptr<Obj> closest_object) const {
+    Color applyGlaze( const Ray& ray, double t, std::shared_ptr<Obj> closest_object, Vec3 normal) const {
         Vec3 intersectionPoint = ray.pointAt(t);
-        Vec3 VL = (lightsource.position - intersectionPoint);
-        Ray reverse_lightray(intersectionPoint, VL);
-
-        Vec3 normal = closest_object->getNormal(ray, intersectionPoint);
-
-        Vec3 reflected_dir = ray.direction -  normal * (ray.direction.dot(normal)) * 2;
+        Vec3 reflected_dir = ray.direction - normal * (ray.direction.dot(normal)) * 2;
 
         Ray reflected_ray(intersectionPoint, reflected_dir);
 
@@ -520,7 +515,7 @@ public:
             Color glazeColor = (castRay(reflected_ray, *this, lightsource.position, true) * 0.4).clamp(0, 255);
             return glazeColor;
         }
-        return returnColor;
+        return Color(0, 0, 0);
     }
 
     Color castRay(const Ray& ray, Objects world, Vec3 lightsource_pos, bool is_reflected_ray) const {

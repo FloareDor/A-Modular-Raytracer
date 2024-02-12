@@ -1,0 +1,7 @@
+*.dll
+!spec/*.dll
+*.mp4
+*.wmv
+*.tga
+*.png
+*.zip

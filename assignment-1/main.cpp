@@ -2,6 +2,7 @@
 #include <GL/glew.h>
 #define GLFW_INCLUDE_NONE
 #include <GLFW/glfw3.h>
+#include <stdint.h>
 
 #include<cmath>
 #include <iostream>
@@ -9,6 +10,9 @@
 #include "vec3.h"
 #include "shader.h"
 #include "objects.h"
+#include "camera.h"
+#include <string>
+
 
 void framebuffer_size_callback(GLFWwindow* window, int width, int height);
 void processInput(GLFWwindow *window);
@@ -17,6 +21,7 @@ void processInput(GLFWwindow *window);
 const unsigned int SCR_WIDTH = 1200;
 const unsigned int SCR_HEIGHT = 1200;
 
+std::string renderName = "multiple_lights";
 
 const char *vertexShaderSource = "#version 330 core\n"
     "layout (location = 0) in vec3 aPos;\n"
@@ -41,7 +46,6 @@ const char *fragmentShaderSource = "#version 330 core\n"
     "   FragColor = texture(texture1, TexCoord);\n"
     "}\n\0";
 
-// Define function to save image to PPM file
 void saveImageToPPM(const char* filename, unsigned char* imageData, const int width, const int height) {
     std::ofstream file(filename);
     if (!file.is_open()) {
@@ -60,124 +64,55 @@ void saveImageToPPM(const char* filename, unsigned char* imageData, const int wi
     file.close();
 }
 
-void setupCameraAndTexture(bool orthogonal, int width, Vec3 cameraPosition, Vec3 camera_up, Vec3 look_at){
-    
+void tga_write(std::string filename, uint32_t width, uint32_t height, uint8_t *dataBGRA, uint8_t dataChannels=4, uint8_t fileChannels=3)
+{
+    char * string_filename = filename.data();
+	FILE *fp = NULL;
+	fopen_s(&fp, string_filename, "wb");
+	if (fp == NULL) return;
+
+	uint8_t header[18] = { 0,0,2,0,0,0,0,0,0,0,0,0, (uint8_t)(width%256), (uint8_t)(width/256), (uint8_t)(height%256), (uint8_t)(height/256), (uint8_t)(fileChannels*8), 0x20 };
+	fwrite(&header, 18, 1, fp);
+
+	// Write image data row by row, but start from the bottom row and move upward
+	for (int32_t y = height - 1; y >= 0; --y)
+	{
+		for (uint32_t x = 0; x < width; ++x)
+		{
+			// Calculate the index of the pixel in the dataBGRA array
+			uint32_t pixelIndex = (y * width + x) * dataChannels;
+
+			// Loop through each channel of the pixel and write it to the file
+			for (uint8_t channel = 0; channel < fileChannels; ++channel)
+			{
+				// Adjust the channel index if reading from BGRA to RGBA
+				uint8_t adjustedChannel = (channel == 0) ? 2 : (channel == 2) ? 0 : channel;
+
+				// Write the pixel channel to the file
+				fputc(dataBGRA[pixelIndex + adjustedChannel], fp);
+			}
+		}
+	}
+
+	fclose(fp);
+}
+
+void setupCameraAndTexture(std::string filename, bool orthogonal, int width, Vec3 cameraPosition, Vec3 camera_up, Vec3 look_at, Vec3 light_pos, Vec3 sphere1_centre, Vec3 sphere2_centre, Vec3 sphere3_centre){
     auto aspect_ratio = 16.0 / 9.0;
 
-    int height = static_cast<int>( width / aspect_ratio);
-    if(height < 1){ height = 1; }
-
-    // camera parameters
-    // Vec3 cameraPosition = Vec3(0,-1,10);
-    // cameraPosition = Vec3(4, -1, 5);
-    // Vec3 camera_up = Vec3(0, -1, 0);
-    // Vec3 look_at = Vec3(0, 0, -1);
-    
-
-    auto viewplane_height = 4.2;
-    auto viewplane_width = viewplane_height * (static_cast<double>(width)/height);
-
-    // basis vectors for camera
-    Vec3 W = (cameraPosition - look_at).unit_vector();
-    Vec3 U = camera_up.cross(look_at);
-    Vec3 V = W.cross(U);
-
-    // The vectors along the axis(es) of the viewplane
-    // Vec3 viewplane_u = Vec3(viewplane_width, 0, 0);
-    // Vec3 viewplane_v = Vec3(0, -viewplane_height, 0);
-
-    Vec3 viewplane_u = U * viewplane_width;
-    Vec3 viewplane_v = V*-1 * viewplane_height;
-    
-
-    // The horizontal and vertical delta vectors from pixel to pixel.
-    Vec3 pixel_delta_u = viewplane_u / width;
-    Vec3 pixel_delta_v = viewplane_v / height;
-
-    double focalLength = (cameraPosition - look_at).length();
-    if(orthogonal){
-        focalLength = 0.0;
-    }
-    // Calculate the location of the upper left pixel.
-    // Vec3 viewplane_upper_left = (cameraPosition - Vec3(0, 0, focalLength)) - viewplane_u/2 - viewplane_v/2;
-    Vec3 viewplane_upper_left = (cameraPosition - (W*focalLength)) - viewplane_u/2 - viewplane_v/2;
-
-    Vec3 initial_pixel = viewplane_upper_left + (pixel_delta_u + pixel_delta_v) * 0.5;
-
-    // std::cout << "inital_pixel:" << std::endl;
-    // initial_pixel.print();
-
-    unsigned char* image = new unsigned char[width*height*3]; // to avoid stack overflow
-
-    Vec3 lightsource_pos = Vec3(2,-2,0.5);
-
-    Objects world;
-
-    // Sphere s1(Vec3(0, 0, -1.1),0.8,Color(1,2,1));
-    // Sphere s2(Vec3(0.9, 0.5, -0.2), 0.3, Color(0.5, 1.68, 1.52));
-    // Plane  p1(Vec3(0, -1, 0), 0.8, Color(1, 2, 1));
-    
-    Shader shader;
-    std::shared_ptr<Sphere> sphere_ptr1 = std::make_shared<Sphere>(Vec3(1, 0, -2), 0.8, Color(2.44,1.94,1.94)*0.75, shader, false);
-    std::shared_ptr<Sphere> sphere_ptr2 = std::make_shared<Sphere>(Vec3(2, 0.2, -0.5), 0.3, Color(0.70, 1.50, 1.84), shader, false);
-    // std::shared_ptr<Sphere> sphere_ptr3 = std::make_shared<Sphere>(Vec3(0, 0.4, -0.1), 0.4, Color(1, 2, 1), shader, false);
-    std::shared_ptr<Plane>  plane_ptr   = std::make_shared<Plane>(Vec3(0, -1, 0), 0.8, Color(0.05, 0.05, 0.05)*10, shader, true); // 10.32,10.32,10.33
-    // std::shared_ptr<Triangle>  triangle1_ptr   = std::make_shared<Triangle>(Vec3(0, -0.4, -0.5), Vec3(-400, -400, -12), Vec3(400, -400, -12), Color(1.33, 2.00, 0.69), shader, false);
-    std::shared_ptr<Tetrahedron>  tetrahedron   = std::make_shared<Tetrahedron>(Vec3(-1, 0.6, -0.2), Vec3(0, 0.6, -0.8), Vec3(-2, 0.6, -0.8), Vec3(-1, -0.35, -0.5), Color(0.70, 1.84, 1.61), shader, true); // Color(1.33, 2.00, 0.69)
-    
-
-    Sunlight sunlight1(Vec3(-3, -2, 1), 12);
-    Sunlight sunlight2(Vec3(3, -2, 0), 8);
-    Sunlight sunlight3(Vec3(0, -2, 3), 6);
-    Sunlight sunlight4(Vec3(0, -2, -3), 6);
-    
-    world.addObject(sphere_ptr1);
-    world.addObject(sphere_ptr2);
-    world.addObject(plane_ptr);
-    // world.addObject(triangle1_ptr);
-    world.addObject(tetrahedron);
-    // world.lightsource = sunlight1;
-    world.addLight(sunlight1);
-    // world.addLight(sunlight2);
-    // world.addLight(sunlight3);
-    // world.addLight(sunlight4);
-
-    for (int y = 0; y < height; y++){
-        for (int x = 0; x < width; x++){
-            
-            Vec3 rayOrigin = cameraPosition;
-            auto viewplane_pixel_loc = initial_pixel + (pixel_delta_u * x) + (pixel_delta_v * y);
-            Vec3 rayDirection = (viewplane_pixel_loc - cameraPosition).unit_vector();
-            // rayDirection.print();
-
-            if(orthogonal){
-                rayOrigin = initial_pixel + (pixel_delta_u * x) + (pixel_delta_v * y);
-                rayDirection = W*-1;
-            }
-
-            // rayDirection = Vec3(0.2, 0, -1);
-
-            Ray ray(rayOrigin, rayDirection);
-
-            // Color color = traceRay(ray, lightsource_pos, false);
-            Color color = world.castRay(ray, world, lightsource_pos, false);
-
-            int idx = (y * width + x) * 3;
-            image[idx] = color.x;
-            image[idx+1] = color.y;
-            image[idx+2] = color.z;
-        }
-    }
-
+	int height = static_cast<int>( width / aspect_ratio);
+	if(height < 1){ height = 1; }
+    auto image = CameraAndScene(orthogonal, width, height, cameraPosition, camera_up, look_at, light_pos, sphere1_centre, sphere2_centre, sphere3_centre);
     unsigned char *data = &image[0];
-
     if (data)
     {
         glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB, width, height, 0, GL_RGB, GL_UNSIGNED_BYTE, data);
         glGenerateMipmap(GL_TEXTURE_2D);
         GLint maxTextureSize;
         glGetIntegerv(GL_MAX_TEXTURE_SIZE, &maxTextureSize);
+        std::string fullFilename = "tga_files/" + std::string(filename) + ".tga";
         // std::cout << "Texture dimensions maximum supported size: " << maxTextureSize << std::endl;
+        tga_write(fullFilename.c_str(), width, height, data, 3, 3); // Assuming 3 data channels and 3 file channels for RGB
     }
 } 
 
@@ -252,12 +187,19 @@ int main()
 
     // set up vertex data (and buffer(s)) and configure vertex attributes
     // ------------------------------------------------------------------
+    // float vertices[] = {
+    //     // positions          // colors           // texture coords
+    //      0.5f,  0.5f, 0.0f,   1.0f, 0.0f, 0.0f,   1.0f, 1.0f, // top right
+    //      0.5f, -0.5f, 0.0f,   0.0f, 1.0f, 0.0f,   1.0f, 0.0f, // bottom right
+    //     -0.5f, -0.5f, 0.0f,   0.0f, 0.0f, 1.0f,   0.0f, 0.0f, // bottom left
+    //     -0.5f,  0.5f, 0.0f,   1.0f, 1.0f, 0.0f,   0.0f, 1.0f  // top left 
+    // };
     float vertices[] = {
         // positions          // colors           // texture coords
-         0.5f,  0.5f, 0.0f,   1.0f, 0.0f, 0.0f,   1.0f, 1.0f, // top right
-         0.5f, -0.5f, 0.0f,   0.0f, 1.0f, 0.0f,   1.0f, 0.0f, // bottom right
-        -0.5f, -0.5f, 0.0f,   0.0f, 0.0f, 1.0f,   0.0f, 0.0f, // bottom left
-        -0.5f,  0.5f, 0.0f,   1.0f, 1.0f, 0.0f,   0.0f, 1.0f  // top left 
+         1.0f,  1.0f, 0.0f,   1.0f, 0.0f, 0.0f,   1.0f, 1.0f, // top right
+         1.0f, -1.0f, 0.0f,   0.0f, 1.0f, 0.0f,   1.0f, 0.0f, // bottom right
+        -1.0f, -1.0f, 0.0f,   0.0f, 0.0f, 1.0f,   0.0f, 0.0f, // bottom left
+        -1.0f,  1.0f, 0.0f,   1.0f, 1.0f, 0.0f,   0.0f, 1.0f  // top left 
     };
     unsigned int indices[] = {  
         0, 1, 3, // first triangle
@@ -299,7 +241,7 @@ int main()
     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST_MIPMAP_LINEAR);
     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
 
-    setupCameraAndTexture(false, 400, Vec3(4, -1, 5), Vec3(0, -1, 0), Vec3(0, 0, -1));
+    // setupCameraAndTexture(renderNameOrthogonal, true, 2560, Vec3(4, -1, 5), Vec3(0, -1, 0), Vec3(0, 0, -1), Vec3(-3, -2, 1), Vec3(1, 0, -2), Vec3(0.8, -0.3, -1), Vec3(2, 0.2, -0.5));
 
     // render loop
     // -----------
@@ -308,6 +250,7 @@ int main()
         // input
         // -----
         bool orthogonal = false;
+
         processInput(window);
 
         // render
@@ -341,11 +284,17 @@ int main()
     return 0;
 }
 double x = 4;
-double z = 5;
 double y = -1;
+double z = 5;
 double angle = 0.05;
-bool orthogonal = false;
+double sphere_motion_radius = 3;
 
+double initx = 2 + 5 * sin(angle) + 1;
+double initz = -0.5 + 5 * cos(angle) - 0.5;
+double inity = y;
+
+int frame = 0;
+bool orthogonal = true;
 // process all input: query GLFW whether relevant keys are pressed/released this frame and react accordingly
 // ---------------------------------------------------------------------------------------------------------
 void processInput(GLFWwindow *window)
@@ -353,37 +302,87 @@ void processInput(GLFWwindow *window)
     if (glfwGetKey(window, GLFW_KEY_ESCAPE) == GLFW_PRESS)
         glfwSetWindowShouldClose(window, true);
 
-     // Check if the 'O' key is pressed
+    
+    std::string persp = "_perspective";
+    std::string renderNamePerspective = renderName + persp;
+    std::string orth = "_orthogonal";
+    std::string renderNameOrthogonal = renderName + orth;
+    std::string finalRenderName = renderNameOrthogonal;
+
+    // Checking if the 'O' key is pressed
     if (glfwGetKey(window, GLFW_KEY_O) == GLFW_PRESS)
     {
         orthogonal = true;
         std::cout << "Running with orthogonal set to true!" << std::endl;
-        setupCameraAndTexture(orthogonal, 400, Vec3(4, -1, 5), Vec3(0, -1, 0), Vec3(0, 0, -1));
     }
 
-    // Check if the 'P' key is pressed
+    // Checking if the 'P' key is pressed
     if (glfwGetKey(window, GLFW_KEY_P) == GLFW_PRESS)
     {
         orthogonal = false;
         std::cout << "Running with orthogonal set to false!" << std::endl;
-        setupCameraAndTexture(orthogonal, 400, Vec3(4, -1, 5), Vec3(0, -1, 0), Vec3(0, 0, -1));
     }
-    
+
+    if (glfwGetKey(window, GLFW_KEY_W) == GLFW_PRESS)
+    {
+        z = z - 1;
+    }
+    if (glfwGetKey(window, GLFW_KEY_A) == GLFW_PRESS)
+    {
+        x = x - 1;
+    }
+    if (glfwGetKey(window, GLFW_KEY_S) == GLFW_PRESS)
+    {
+        z = z + 1;
+    }
+    if (glfwGetKey(window, GLFW_KEY_D) == GLFW_PRESS)
+    {
+        x = x + 1;
+    }
+    if (glfwGetKey(window, GLFW_KEY_UP) == GLFW_PRESS)
+    {
+        y = y - 1;
+    }
+    if (glfwGetKey(window, GLFW_KEY_DOWN) == GLFW_PRESS)
+    {
+        y = y + 1;
+    }
+
+    if(!orthogonal){
+        finalRenderName = renderNamePerspective;
+    }
+    Vec3 look_at = (Vec3(x,y,z) + Vec3(0,0,-1));
+    look_at = Vec3(0, 0, -1);
+    setupCameraAndTexture(finalRenderName, orthogonal, 200, Vec3(x, y, z), Vec3(0, -1, 0), look_at, Vec3(-3, -2, 1), Vec3(1, 0, -2), Vec3(0.8, -0.3, -1), Vec3(2, 0.2, -0.5));
+
+    // animation loop
     // if (glfwGetKey(window, GLFW_KEY_N) != GLFW_PRESS)
     // {
     //     // Incrementing the angle for the circular motion
-    //     angle += 0.05;
+    //     angle += 0.015;
+
+    //     // if(angle != 0.015+0.05 && x == initx && y == inity && z == initz){
+    //     //     glfwSetWindowShouldClose(window, true);
+    //     // }
 
     //     Vec3 spherebro(2, 0.2, -0.5);
 
     //     // Calculate the new x and z coordinates based on the angle
     //     x = 2 + 5 * sin(angle);
     //     z = -0.5 + 5 * cos(angle);
+
+    //     double sphere_x = sphere_motion_radius * cos(angle);
+    //     double sphere_z = sphere_motion_radius * sin(angle);
+
+    //     const char* frame_str = std::to_string(frame).c_str();
+
     //     // std::cout << "next frame!" << std::endl;
-    //     setupCameraAndTexture(orthogonal, 300, Vec3(x, y, z), Vec3(0, -1, 0), Vec3(0, 0, -1));
+    //     // cam Vec3(5, -1, 5)
+
     //     x = x + 1;
     //     z = z - 0.5;
-    //     // y = y + 1;
+    //     // y = y - 0.003;
+    //     frame += 1;
     // }
 }
 

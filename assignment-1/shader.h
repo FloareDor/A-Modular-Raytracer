@@ -13,7 +13,11 @@ public:
 		double ambientCoefficient = 0.6;
         double diffuseCoefficient = 12;
         double specularCoefficient = 9; 
-        double shininess = 65.0;         
+        double shininess = 65.0;
+
+        // ambientCoefficient = 0;
+        // diffuseCoefficient = 0;
+        // specularCoefficient = 0;       
 
 		// ambient shading model
 		double ambientIntensity = ambientCoefficient * lightIntensity;
