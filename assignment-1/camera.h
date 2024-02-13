@@ -7,20 +7,28 @@
 #include "objects.h"
 #include "ray.h"
 
-// #include "lodepng.h"
+// Generate ray direction based on pixel coordinates with fisheye effect
+Vec3 fishRayDirection(int x, int y, double width, double height, double fov) {
+    float aspectRatio = float(width) / float(height);
+    float fovRadians = fov * 3.147 / 180.0;
+    float halfWidth = tan(fovRadians / 2.0);
+    float halfHeight = halfWidth / aspectRatio;
 
-// // Function to save the image data to a PNG file
-// void saveImage(const std::string& filename, const std::vector<unsigned char>& image, int width, int height) {
-//     // Encode the image data to PNG format
-//     unsigned error = lodepng::encode(filename, image, width, height);
+    // Map x, y to [-1, 1]
+    float scaleX = (2.0 * x - width) / width;
+    float scaleY = (2.0 * y - height) / height;
 
-//     // Check if encoding was successful
-//     if (error) {
-//         std::cerr << "PNG encoder error " << error << ": " << lodepng_error_text(error) << std::endl;
-//     } else {
-//         std::cout << "Image saved as " << filename << std::endl;
-//     }
-// }
+    // Apply fisheye effect
+    float r = sqrt(scaleX * scaleX + scaleY * scaleY);
+    float theta = atan2(scaleY, scaleX);
+    float phi = r * halfWidth * 3.147;
+
+    float dirX = cos(phi) * cos(theta);
+    float dirY = cos(phi) * sin(theta);
+    float dirZ = sin(phi);
+
+    return Vec3(dirX, dirY, dirZ).unit_vector();
+}
 
 
 // My camera system is heavily influenced by "Ray Tracing in One Weekend E-Book"
@@ -79,12 +87,12 @@ unsigned char* CameraAndScene(bool orthogonal, int width, int height, Vec3 camer
 	// Plane  p1(Vec3(0, -1, 0), 0.8, Color(1, 2, 1));
 
 	Shader shader;
-	std::shared_ptr<Sphere> sphere_ptr1 = std::make_shared<Sphere>(sphere1_centre, 0.8, Color(2.44,1.94,1.94)*0.75, shader, true); // Vec3(1, 0, -2)
-	std::shared_ptr<Sphere> sphere_ptr2 = std::make_shared<Sphere>(sphere2_centre, 0.2, Color(0.70, 1.50, 1.84), shader, true);
-	std::shared_ptr<Sphere> sphere_ptr3 = std::make_shared<Sphere>(s3_centre, 0.4, Color(0.3, 0.4, 0.7), shader, true);
-	std::shared_ptr<Plane>  plane_ptr   = std::make_shared<Plane>(Vec3(0, -1, 0), 0.8, Color(0.8,0.1,0.4), shader, true); // 10.32,10.32,10.33 0.8,0.1,0.4
+	std::shared_ptr<Sphere> sphere_ptr1 = std::make_shared<Sphere>(sphere1_centre, 0.8, Color(0,0,0)*0.75, shader, true); // Vec3(1, 0, -2), Color(2.44,1.94,1.94)*0.75
+	std::shared_ptr<Sphere> sphere_ptr2 = std::make_shared<Sphere>(sphere2_centre, 0.2, Color(0.70, 1.50, 1.84), shader, true);// Color(0.70, 1.50, 1.84)
+	std::shared_ptr<Sphere> sphere_ptr3 = std::make_shared<Sphere>(s3_centre, 0.4, Color(0.3, 0.4, 0.7), shader, true);// Color(0.3, 0.4, 0.7)
+	std::shared_ptr<Plane>  plane_ptr   = std::make_shared<Plane>(Vec3(0, -1, 0), 0.8, Color(0.8,0.1,0.4), shader, true); // 10.32,10.32,10.33 0.8,0.1,0.4 // Color(0.8,0.1,0.4)
 	// std::shared_ptr<Triangle>  triangle1_ptr   = std::make_shared<Triangle>(Vec3(0, -0.4, -0.5), Vec3(-200, -200, -12), Vec3(200, -200, -12), Color(1.33, 2.00, 0.69), shader, false);
-	std::shared_ptr<Tetrahedron>  tetrahedron   = std::make_shared<Tetrahedron>(Vec3(-1, 0.6, -0.2), Vec3(0, 0.6, -0.8), Vec3(-2, 0.6, -0.8), Vec3(-1, -0.35, -0.5), Color(0.70, 1.84, 1.61), shader, true); // Color(1.33, 2.00, 0.69)
+	std::shared_ptr<Tetrahedron>  tetrahedron   = std::make_shared<Tetrahedron>(Vec3(-1, 0.6, -0.2), Vec3(0, 0.6, -0.8), Vec3(-2, 0.6, -0.8), Vec3(-1, -0.35, -0.5), Color(0.70, 1.84, 1.61), shader, true); // Color(1.33, 2.00, 0.69) // Color(0.70, 1.84, 1.61)
 
 
 	// Sunlight sunlight1(light_pos, 12); // Vec3(-3, -2, 1) // 8 with 3
@@ -106,13 +114,15 @@ unsigned char* CameraAndScene(bool orthogonal, int width, int height, Vec3 camer
 	world.addLight(sunlight4);
 	world.addLight(sunlight5);
 
+	double fisheye_radius = std::min(width, height) / 2.0;
+
 	for (int y = 0; y < height; y++){
 		for (int x = 0; x < width; x++){
 			
 			Vec3 rayOrigin = cameraPosition;
 			auto viewplane_pixel_loc = initial_pixel + (pixel_delta_u * x) + (pixel_delta_v * y);
 			Vec3 rayDirection = (viewplane_pixel_loc - cameraPosition).unit_vector();
-			// rayDirection.print();
+			// rayDirection = fishRayDirection(x, y, width, height, 2);
 
 			if(orthogonal){
 				rayOrigin = initial_pixel + (pixel_delta_u * x) + (pixel_delta_v * y);
@@ -122,11 +132,19 @@ unsigned char* CameraAndScene(bool orthogonal, int width, int height, Vec3 camer
 			// rayDirection = Vec3(0.2, 0, -1);
 
 			Ray ray(rayOrigin, rayDirection);
+			int idx = (y * width + x) * 3;
+			// double distance_to_center = std::sqrt((x - width / 2.0) * (x - width / 2.0) + (y - height / 2.0) * (y - height / 2.0));
+			// if(distance_to_center > fisheye_radius) {
+			// 	// Ray falls outside the fisheye circle, color it black
+			// 	image[idx] = 0;
+			// 	image[idx+1] = 0;
+			// 	image[idx+2] = 0;
+			// }else{
 
 			// Color color = traceRay(ray, lightsource_pos, false);
 			Color color = world.castRay(ray, world, lightsource_pos, false);
 
-			int idx = (y * width + x) * 3;
+			// int idx = (y * width + x) * 3;
 			image[idx] = color.x;
 			image[idx+1] = color.y;
 			image[idx+2] = color.z;

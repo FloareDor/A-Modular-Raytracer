@@ -21,7 +21,7 @@ void processInput(GLFWwindow *window);
 const unsigned int SCR_WIDTH = 1200;
 const unsigned int SCR_HEIGHT = 1200;
 
-std::string renderName = "multiple_lights";
+std::string renderName = "fisheye";
 
 const char *vertexShaderSource = "#version 330 core\n"
     "layout (location = 0) in vec3 aPos;\n"
@@ -294,7 +294,7 @@ double initz = -0.5 + 5 * cos(angle) - 0.5;
 double inity = y;
 
 int frame = 0;
-bool orthogonal = true;
+bool orthogonal = false;
 // process all input: query GLFW whether relevant keys are pressed/released this frame and react accordingly
 // ---------------------------------------------------------------------------------------------------------
 void processInput(GLFWwindow *window)
@@ -353,7 +353,7 @@ void processInput(GLFWwindow *window)
     }
     Vec3 look_at = (Vec3(x,y,z) + Vec3(0,0,-1));
     look_at = Vec3(0, 0, -1);
-    setupCameraAndTexture(finalRenderName, orthogonal, 200, Vec3(x, y, z), Vec3(0, -1, 0), look_at, Vec3(-3, -2, 1), Vec3(1, 0, -2), Vec3(0.8, -0.3, -1), Vec3(2, 0.2, -0.5));
+    setupCameraAndTexture(finalRenderName, orthogonal, 1000, Vec3(x, y, z), Vec3(0, -1, 0), look_at, Vec3(-3, -2, 1), Vec3(1, 0, -2), Vec3(0.8, -0.3, -1), Vec3(2, 0.2, -0.5));
 
     // animation loop
     // if (glfwGetKey(window, GLFW_KEY_N) != GLFW_PRESS)
