@@ -6,7 +6,6 @@
 
 #include<cmath>
 #include <iostream>
-#include "raytracer.h"
 #include "vec3.h"
 #include "shader.h"
 #include "objects.h"

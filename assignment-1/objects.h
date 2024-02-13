@@ -1,7 +1,6 @@
 #ifndef OBJECTS_H
 #define OBJECTS_H
 
-#include "raytracer.h"
 #include "Vec3.h"
 #include "shader.h"
 

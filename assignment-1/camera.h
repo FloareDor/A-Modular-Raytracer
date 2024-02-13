@@ -11,7 +11,7 @@
 // I really enjoyed the explanation by Dr. Peter Shirley
 // https://raytracing.github.io/
 
-// Generate ray direction based on pixel coordinates with fisheye effect
+// I've tried to generate ray direction based on pixel coordinates with fisheye effect
 Vec3 fishRayDirection(int x, int y, double width, double height, double fov) {
     float aspectRatio = float(width) / float(height);
     float fovRadians = fov * 3.147 / 180.0;
@@ -137,6 +137,8 @@ unsigned char* CameraAndScene(bool orthogonal, int width, int height, Vec3 camer
 
 			Ray ray(rayOrigin, rayDirection);
 			int idx = (y * width + x) * 3;
+			// I've tried to add a little fish eye effect
+
 			// double distance_to_center = std::sqrt((x - width / 2.0) * (x - width / 2.0) + (y - height / 2.0) * (y - height / 2.0));
 			// if(distance_to_center > fisheye_radius) {
 			// 	// Ray falls outside the fisheye circle, color it black
