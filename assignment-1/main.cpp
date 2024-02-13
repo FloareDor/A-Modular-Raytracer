@@ -293,6 +293,9 @@ double initx = 2 + 5 * sin(angle) + 1;
 double initz = -0.5 + 5 * cos(angle) - 0.5;
 double inity = y;
 
+double sphere_x = 2;
+double sphere_z = -0.5;
+
 int frame = 0;
 bool orthogonal = false;
 // process all input: query GLFW whether relevant keys are pressed/released this frame and react accordingly
@@ -351,39 +354,41 @@ void processInput(GLFWwindow *window)
     if(!orthogonal){
         finalRenderName = renderNamePerspective;
     }
-    Vec3 look_at = (Vec3(x,y,z) + Vec3(0,0,-1));
-    look_at = Vec3(0, 0, -1);
-    setupCameraAndTexture(finalRenderName, orthogonal, 1000, Vec3(x, y, z), Vec3(0, -1, 0), look_at, Vec3(-3, -2, 1), Vec3(1, 0, -2), Vec3(0.8, -0.3, -1), Vec3(2, 0.2, -0.5));
+
 
     // animation loop
-    // if (glfwGetKey(window, GLFW_KEY_N) != GLFW_PRESS)
-    // {
-    //     // Incrementing the angle for the circular motion
-    //     angle += 0.015;
+    if(glfwGetKey(window, GLFW_KEY_N) == GLFW_PRESS)
+    {
+        // Incrementing the angle for the circular motion
+        angle += 0.015;
 
-    //     // if(angle != 0.015+0.05 && x == initx && y == inity && z == initz){
-    //     //     glfwSetWindowShouldClose(window, true);
-    //     // }
+        // if(angle != 0.015+0.05 && x == initx && y == inity && z == initz){
+        //     glfwSetWindowShouldClose(window, true);
+        // }
 
-    //     Vec3 spherebro(2, 0.2, -0.5);
+        Vec3 spherebro(2, 0.2, -0.5);
 
-    //     // Calculate the new x and z coordinates based on the angle
-    //     x = 2 + 5 * sin(angle);
-    //     z = -0.5 + 5 * cos(angle);
+        // Calculate the new x and z coordinates based on the angle
+        x = 2 + 5 * sin(angle);
+        z = -0.5 + 5 * cos(angle);
 
-    //     double sphere_x = sphere_motion_radius * cos(angle);
-    //     double sphere_z = sphere_motion_radius * sin(angle);
+        double sphere_x = sphere_motion_radius * cos(angle);
+        double sphere_z = sphere_motion_radius * sin(angle);
 
-    //     const char* frame_str = std::to_string(frame).c_str();
+        const char* frame_str = std::to_string(frame).c_str();
 
-    //     // std::cout << "next frame!" << std::endl;
-    //     // cam Vec3(5, -1, 5)
+        // std::cout << "next frame!" << std::endl;
+        // cam Vec3(5, -1, 5)
 
-    //     x = x + 1;
-    //     z = z - 0.5;
-    //     // y = y - 0.003;
-    //     frame += 1;
-    // }
+        x = x + 1;
+        z = z - 0.5;
+        // y = y - 0.003;
+        frame += 1;
+    }
+
+    Vec3 look_at = (Vec3(x,y,z) + Vec3(0,0,-1));
+    look_at = Vec3(0, 0, -1);
+    setupCameraAndTexture(finalRenderName, orthogonal, 200, Vec3(x, y, z), Vec3(0, -1, 0), look_at, Vec3(-3, -2, 1), Vec3(1, 0, -2), Vec3(0.8, -0.3, -1), Vec3(sphere_x+2, 0.2, sphere_z+2));
 }
 
 // glfw: whenever the window size changed (by OS or user resize) this callback function executes

@@ -7,6 +7,10 @@
 #include "objects.h"
 #include "ray.h"
 
+// My camera system is heavily influenced by "Ray Tracing in One Weekend E-Book"
+// I really enjoyed the explanation by Dr. Peter Shirley
+// https://raytracing.github.io/
+
 // Generate ray direction based on pixel coordinates with fisheye effect
 Vec3 fishRayDirection(int x, int y, double width, double height, double fov) {
     float aspectRatio = float(width) / float(height);

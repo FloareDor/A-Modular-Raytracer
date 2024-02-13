@@ -64,58 +64,6 @@ public:
         return color;
     }
 
-    double alt_hit(const Ray& ray) {
-                // compute the plane's normal
-        Vec3 ab = b - a;
-        Vec3 ac = c - a;
-        // no need to unit_vector
-        Vec3 N = ab.cross(ac); // N
-        float area2 = N.length();
-    
-        // Step 1: finding P
-        
-        // check if the ray and plane are parallel.
-        float NdotRayDirection = N.dot(ray.direction);
-        if (fabs(NdotRayDirection) < 0.000000000000001) // almost 0
-            return -1.0; // they are parallel, so they don't intersect! 
-
-        // compute d parameter using equation 2
-        float d = -N.dot(a);
-
-        // compute t (equation 3)
-        double t = -(N.dot(ray.origin) + d) / NdotRayDirection;
-        
-        // check if the triangle is behind the ray
-        if (t < 0) return -1.0; // the triangle is behind
-    
-        // compute the intersection point using equation 1
-        Vec3 P = ray.origin + ray.direction*t;
-    
-        // Step 2: inside-outside test
-        // Vec3 C; // vector perpendicular to triangle's plane
-    
-        // edge 0
-        Vec3 edge0 = b - a; 
-        Vec3 vp0 = P - a;
-        Vec3 C = edge0.cross(vp0);
-        if (N.dot(C) < 0) return -1.0; // P is on the right side
-    
-        // edge 1
-        Vec3 edge1 = c - b; 
-        Vec3 vp1 = P - b;
-        C = edge1.cross(vp1);
-        if (N.dot(C) < 0)  return -1.0; // P is on the right side
-    
-        // edge 2
-        Vec3 edge2 = a - c; 
-        Vec3 vp2 = P - c;
-        C = edge2.cross(vp2);
-        if (N.dot(C) < 0) return -1.0; // P is on the right side;
-        // std::cout << t << std::endl;
-        return t; // this ray hits the triangle
-
-    }
-
     HitResult hit(const Ray& ray) override {
 
         float epsilon = std::numeric_limits<float>::epsilon();
@@ -284,6 +232,7 @@ public:
         return Vec3((a.x + b.x + c.x + d.x)/ 4, (a.y + b.y + c.y + d.y)/4, (a.z + b.z + c.z + d.z)/4);
     };
 
+    // we're not using this function anyway cuz we're calculating the normal always in the hit function itself
     Vec3 getNormal(const Ray& ray, Vec3 intersectionPoint) const override {
         return Vec3(0, 0, 0);
     // // Determine which face the intersection point belongs to
@@ -470,15 +419,7 @@ public:
         }
         if(objColor.x == 132){
             sum.print();
-        }
-
-
-
-        // if(is_reflected_ray){
-        //     shadedColor.print();
-        // }
-        
-
+        }        
 
         return sum.clamp(0,255);
     }
