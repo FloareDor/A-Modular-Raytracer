@@ -1,4 +1,25 @@
-## RayTracer C++
+## [RayTracer C++](https://github.com/FloareDor/A-Modular-Raytracer)
+
+github: https://github.com/FloareDor/A-Modular-Raytracer
+
+### This is an assignment as part of the CAP 4730 course of Computational Structures for Computer Graphics.
+
+#### The topics in the course include:
+Enhancing ray tracing by ray reconstruction (AI)
+Games with and without ray tracing
+Real-time ray tracing with NVIDIA
+Hardware-accelerated ray tracing in iPhone 15 pro.
+3D Math Primer For Graphics and Game Development
+Rendering realistic faces by learning maps from 3D object coordinates to surface coordinates
+Spatial aliasing, Temporal aliasing
+Weierstrass's approximation theorem
+Computed Tomography
+Volume Rendering
+
+#### Summarized topics:
+Introduction, basic linear algebra, geometric transformations, shading and illumination, rendering algorithms, anti-aliasing techniques, modeling curves and surfaces, advance topics (time permitting).
+
+## Assignment-1
 
 ### Overview
 
