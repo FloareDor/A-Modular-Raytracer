@@ -48,7 +48,6 @@ struct Vertex {
     float x, y, z;
     float r, g, b; // Color components
 };
-
 struct objReturn {
     float *vertices;
     int size;
@@ -411,15 +410,27 @@ void processInput(GLFWwindow *window)
 {
     if (glfwGetKey(window, GLFW_KEY_ESCAPE) == GLFW_PRESS)
         glfwSetWindowShouldClose(window, true);
-
-    
-    // Handle the "w" key press
-    if (glfwGetKey(window, GLFW_KEY_W) == GLFW_PRESS)
+        
+    glm::vec3 newRotationAxis(0.0f);
+    if (glfwGetKey(window, GLFW_KEY_X) == GLFW_PRESS)
     {
-        // Update the rotation angle (add 90 degrees)
+        newRotationAxis.x = 1.0f;
+    }
+    if (glfwGetKey(window, GLFW_KEY_Y) == GLFW_PRESS)
+    {
+        newRotationAxis.y = 1.0f;
+    }
+    if (glfwGetKey(window, GLFW_KEY_Z) == GLFW_PRESS)
+    {
+        newRotationAxis.z = 1.0f;
+    }
+
+    if (newRotationAxis != glm::vec3(0.0f))
+    {
+        rotationAxis = glm::normalize(newRotationAxis);
         rotationAngle += glm::radians(2.0f);
-        // Update the rotation matrix
-        rotationMatrix = glm::rotate(glm::mat4(1.0f), rotationAngle, rotationAxis);
+        glm::mat4 rotationStep = glm::rotate(glm::mat4(1.0f), glm::radians(2.0f), rotationAxis);
+        rotationMatrix = rotationStep * rotationMatrix;
     }
 
     if (glfwGetKey(window, GLFW_KEY_UP) == GLFW_PRESS)
