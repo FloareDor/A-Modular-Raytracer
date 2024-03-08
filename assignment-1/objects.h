@@ -93,7 +93,6 @@ public:
         // At this stage we can compute t to find out where the intersection point is on the line.
         float t =  edge2.dot(s_cross_e1) * inv_det;
 
-
         if (t > epsilon) // ray intersection
         {
             double Nx = a.y * b.z - a.z * b.y;
@@ -270,8 +269,6 @@ public:
         double a = ray.direction.dot(ray.direction);
         double b = (ray.direction * 2).dot(ray.origin - center);
         double c = (ray.origin - center).dot((ray.origin - center)) - (radius * radius);
-        
-
         double discriminant = (b * b) - (4 * a * c);
 
         double t1 = (-b - (sqrt(discriminant))) / (2 * a);
