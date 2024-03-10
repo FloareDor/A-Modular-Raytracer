@@ -19,19 +19,10 @@ float rotationAngle = glm::radians(0.0f); // 45 degrees
 // Rotation axis (x, y, z)
 glm::vec3 rotationAxis(0.0f, 1.0f, 0.0f);
 
-// Create the rotation matrix
 glm::mat4 rotationMatrix = glm::rotate(glm::mat4(1.0f), rotationAngle, rotationAxis);
 
 glm::vec3 translationVector(0.0f, 0.0f, 0.0f);
 glm::mat4 translationMatrix = glm::translate(glm::mat4(1.0f), translationVector);
-
-// glm::mat4 translationMatrix = glm::mat4(
-//     1, 0.0f, 0.0f, 0.0f,
-//     0.0f, 1, 0.0f, 0.0f,
-//     0.0f, 0.0f, 1, 0.0f,
-//     0.0f, 0.0f, 0.0f, 1.0f
-// );
-
 
 glm::mat4 viewportMatrix = glm::mat4(
     1, 0.0f, 0.0f, 0.0f,
@@ -98,11 +89,6 @@ objReturn loadObjFile(const std::string &filename)
                 vertex.g = (vertex.y + 1.0f) / 2.0f; // Map y from [-1, 1] to [0, 1]
                 vertex.b = (vertex.z + 1.0f) / 2.0f; // Map z from [-1, 1] to [0, 1]
 
-                // glm::vec4 vertexVec(vertex.x, vertex.y, vertex.z, 1.0f);
-                // vertexVec = rotationMatrix * vertexVec;
-                // vertex.x = vertexVec.x;
-                // vertex.y = vertexVec.y;
-                // vertex.z = vertexVec.z;
 
                 vertices.push_back(vertex);
             }
@@ -118,10 +104,6 @@ objReturn loadObjFile(const std::string &filename)
         sscanf(v2.c_str(), "%d", &idx2);
         sscanf(v3.c_str(), "%d", &idx3);
         sscanf(v4.c_str(), "%d", &idx4);
-
-        // Assuming vertices and face indices are consistent
-        // You might need to adjust for different indexing conventions
-
         
         Vertex ver1, ver2, ver3, ver4, mid;
         ver1 = vertices[idx1 - 1];
@@ -148,7 +130,6 @@ objReturn loadObjFile(const std::string &filename)
         // If it's a quad
         if (!v4.empty())
         {
-            // triangles[0].v1 = ver4;
             Triangle triangle;
             triangle.v1 = ver4;
             triangle.v2 = ver2;
@@ -180,7 +161,6 @@ objReturn loadObjFile(const std::string &filename)
             renderVertices.push_back(ver2);
             renderVertices.push_back(ver3);
         }
-            
 
             // std::cout << idx1 << " " << idx2 << " " << idx3 << " " << idx4 << std::endl;
         }
@@ -218,14 +198,6 @@ objReturn loadObjFile(const std::string &filename)
         0.0f, scaleY, 0.0f, 0.0f,
         0.0f, 0.0f, scaleZ, 0.0f,
         0.0f, 0.0f, 0.0f, 1.0f);
-
-    // viewportMatrix = glm::mat4(
-    //     scaleX, 0.0f, 0.0f, 0.0f,
-    //     0.0f, scaleY, 0.0f, 0.0f,
-    //     0.0f, 0.0f, scaleZ, 0.0f,
-    //     0.0f, 0.0f, 0.0f,    1.0f
-    // );
-
 
     // Convert Vertex objects to floats
     for (size_t i = 0; i < renderVertices.size(); ++i) {
@@ -347,7 +319,7 @@ int main()
     // ------------------------------------------------------------------
 
     // std::cout << "size of vertices: " << vertices.size() << std::endl;
-    objReturn obj = loadObjFile("data/data/dolphins.obj");
+    objReturn obj = loadObjFile("data/data/cube.obj");
     float *renderVertices = obj.vertices;
     int size = obj.size * 6;
     std::cout << "size of vertices: " << size << std::endl;
@@ -399,7 +371,7 @@ int main()
     {   
         double currentTime = glfwGetTime();
         double elapsedTime = currentTime - previousTime;
-        std::cout << "Time taken for this iteration: " << elapsedTime << " seconds" << std::endl;
+        std::cout << "Time taken for this frame: " << elapsedTime << " seconds" << std::endl;
         previousTime = currentTime;
 
         // input
@@ -413,14 +385,8 @@ int main()
         // be sure to activate the shader
         glUseProgram(shaderProgram);
     
-        // // update the uniform color
-        // float timeValue = glfwGetTime();
-        // float greenValue = sin(timeValue) / 2.0f + 0.5f;
-        // int vertexColorLocation = glGetUniformLocation(shaderProgram, "ourColor");
-        // glUniform4f(vertexColorLocation, 0.0f, greenValue, 0.0f, 1.0f);
         for (int i = 0; i < obj.size; ++i) {
             glm::vec4 vertexVec(renderVertices[i * 6], renderVertices[i * 6 + 1], renderVertices[i * 6 + 2], 1.0f);
-            // vertexVec = rotationMatrix * vertexVec;
             // vertexVec = translationMatrix * viewportMatrix * scalingMatrix * rotationMatrix * vertexVec;
             vertices[i * 6] = vertexVec.x;
             vertices[i * 6 + 1] = vertexVec.y;
@@ -542,6 +508,7 @@ void processInput(GLFWwindow *window)
     }
     translationMatrix = glm::translate(glm::mat4(1.0f), translationVector);
 
+    // not working for some reason...
     // if (glfwGetKey(window, GLFW_KEY_A) == GLFW_PRESS)
     // {
     //     std::cout << "pressed A" << std::endl;

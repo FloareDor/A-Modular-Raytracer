@@ -1,0 +1,1 @@
+g++ main.cpp -o img -I ./Dependencies/glfw-3.3.9.bin.WIN64\include -I ./Dependencies/glew-2.1.0\include -I ./Dependencies/glm -L ./Dependencies/glfw-3.3.9.bin.WIN64\lib-mingw-w64 -L ./Dependencies/glew-2.1.0\lib\Release\x64 -lglfw3dll -lglew32 -lopengl32; & ./img
