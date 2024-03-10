@@ -23,6 +23,7 @@ glm::vec3 rotationAxis(0.0f, 1.0f, 0.0f);
 glm::mat4 rotationMatrix = glm::rotate(glm::mat4(1.0f), rotationAngle, rotationAxis);
 
 glm::vec3 translationVector(0.0f, 0.0f, 0.0f);
+glm::mat4 translationMatrix = glm::translate(glm::mat4(1.0f), translationVector);
 
 // glm::mat4 translationMatrix = glm::mat4(
 //     1, 0.0f, 0.0f, 0.0f,
@@ -30,7 +31,7 @@ glm::vec3 translationVector(0.0f, 0.0f, 0.0f);
 //     0.0f, 0.0f, 1, 0.0f,
 //     0.0f, 0.0f, 0.0f, 1.0f
 // );
-glm::mat4 translationMatrix = glm::translate(glm::mat4(1.0f), translationVector);
+
 
 glm::mat4 viewportMatrix = glm::mat4(
     1, 0.0f, 0.0f, 0.0f,
@@ -56,7 +57,7 @@ glm::mat4 scalingMatrix = glm::mat4(
 
 struct Vertex {
     float x, y, z;
-    float r, g, b; // Color components
+    float r, g, b;
 };
 
 struct Triangle {
@@ -181,7 +182,7 @@ objReturn loadObjFile(const std::string &filename)
         }
             
 
-            std::cout << idx1 << " " << idx2 << " " << idx3 << " " << idx4 << std::endl;
+            // std::cout << idx1 << " " << idx2 << " " << idx3 << " " << idx4 << std::endl;
         }
     }
 
@@ -346,7 +347,7 @@ int main()
     // ------------------------------------------------------------------
 
     // std::cout << "size of vertices: " << vertices.size() << std::endl;
-    objReturn obj = loadObjFile("data/data/cow.obj");
+    objReturn obj = loadObjFile("data/data/dolphins.obj");
     float *renderVertices = obj.vertices;
     int size = obj.size * 6;
     std::cout << "size of vertices: " << size << std::endl;
@@ -355,7 +356,7 @@ int main()
     for (int i = 0; i < size; i++)
     {
         vertices[i] = renderVertices[i];
-        // std::cout << renderVertices[i] << std::endl;
+        // std::cout << renderVertices[i] << s`td::endl;
     }
 
     unsigned int numVertices = sizeof(vertices) / sizeof(float) / 6;
@@ -393,8 +394,14 @@ int main()
 
     // render loop
     // -----------
+    double previousTime = glfwGetTime();
     while(!glfwWindowShouldClose(window))
-    {
+    {   
+        double currentTime = glfwGetTime();
+        double elapsedTime = currentTime - previousTime;
+        std::cout << "Time taken for this iteration: " << elapsedTime << " seconds" << std::endl;
+        previousTime = currentTime;
+
         // input
         processInput(window);
 
@@ -414,9 +421,7 @@ int main()
         for (int i = 0; i < obj.size; ++i) {
             glm::vec4 vertexVec(renderVertices[i * 6], renderVertices[i * 6 + 1], renderVertices[i * 6 + 2], 1.0f);
             // vertexVec = rotationMatrix * vertexVec;
-            // vertexVec = scalingMatrix * viewportMatrix * rotationMatrix * vertexVec;
-            // vertexVec = translationMatrix * scalingMatrix * rotationMatrix * vertexVec;
-            // vertexVec = rotationMatrix * vertexVec;
+            // vertexVec = translationMatrix * viewportMatrix * scalingMatrix * rotationMatrix * vertexVec;
             vertices[i * 6] = vertexVec.x;
             vertices[i * 6 + 1] = vertexVec.y;
             vertices[i * 6 + 2] = vertexVec.z;
@@ -446,6 +451,9 @@ int main()
         // swap buffers and poll IO events
         glfwSwapBuffers(window);
         glfwPollEvents();
+        // double currentTime = glfwGetTime();
+        // double elapsedTime = currentTime - previousTime;
+        // std::cout << "Time taken for this iteration: " << elapsedTime << " seconds" << std::endl;
     }
 
     // optional: de-allocate all resources once they've outlived their purpose:
@@ -485,15 +493,15 @@ void processInput(GLFWwindow *window)
     {
         rotationAxis = glm::normalize(newRotationAxis);
         rotationAngle += glm::radians(2.0f);
-        glm::mat4 rotationStep = glm::rotate(glm::mat4(1.0f), glm::radians(2.0f), rotationAxis);
+        glm::mat4 rotationStep = glm::rotate(glm::mat4(1.0f), glm::radians(0.75f), rotationAxis);
         rotationMatrix = rotationStep * rotationMatrix;
     }
 
     if (glfwGetKey(window, GLFW_KEY_UP) == GLFW_PRESS)
     {
-        sX *= 1.1;
-        sY *= 1.1;
-        sZ *= 1.1;
+        sX *= 1.01;
+        sY *= 1.01;
+        sZ *= 1.01;
         scalingMatrix = glm::mat4(
             sX, 0.0f, 0.0f, tX,
             0.0f, sY, 0.0f, tY,
@@ -503,9 +511,9 @@ void processInput(GLFWwindow *window)
     
     if (glfwGetKey(window, GLFW_KEY_DOWN) == GLFW_PRESS)
     {
-        sX *= 0.9;
-        sY *= 0.9;
-        sZ *= 0.9;
+        sX *= 0.99;
+        sY *= 0.99;
+        sZ *= 0.99;
         scalingMatrix = glm::mat4(
             sX, 0.0f, 0.0f, tX,
             0.0f, sY, 0.0f, tY,
