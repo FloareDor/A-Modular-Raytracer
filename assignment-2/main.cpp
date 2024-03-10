@@ -20,9 +20,19 @@ float rotationAngle = glm::radians(0.0f); // 45 degrees
 glm::vec3 rotationAxis(0.0f, 1.0f, 0.0f);
 
 // Create the rotation matrix
-glm::mat4 rotationMatrix = glm::rotate(glm::mat4(1.0f), rotationAngle, rotationAxis);\
+glm::mat4 rotationMatrix = glm::rotate(glm::mat4(1.0f), rotationAngle, rotationAxis);
 
-glm::mat4 viewportTransformation = glm::mat4(
+glm::vec3 translationVector(0.0f, 0.0f, 0.0f);
+
+// glm::mat4 translationMatrix = glm::mat4(
+//     1, 0.0f, 0.0f, 0.0f,
+//     0.0f, 1, 0.0f, 0.0f,
+//     0.0f, 0.0f, 1, 0.0f,
+//     0.0f, 0.0f, 0.0f, 1.0f
+// );
+glm::mat4 translationMatrix = glm::translate(glm::mat4(1.0f), translationVector);
+
+glm::mat4 viewportMatrix = glm::mat4(
     1, 0.0f, 0.0f, 0.0f,
     0.0f, 1, 0.0f, 0.0f,
     0.0f, 0.0f, 1, 0.0f,
@@ -48,7 +58,13 @@ struct Vertex {
     float x, y, z;
     float r, g, b; // Color components
 };
-struct objReturn {
+
+struct Triangle {
+    Vertex v1, v2, v3;
+};
+
+struct objReturn
+{
     float *vertices;
     int size;
 };
@@ -59,6 +75,7 @@ objReturn loadObjFile(const std::string &filename)
     std::vector<Vertex> vertices;
     std::vector<Vertex> renderVertices;
     objReturn obj;
+    std::vector<Triangle> triangles;
 
     if (!file.is_open()) {
         std::cerr << "Error: Failed to open file: " << filename << std::endl;
@@ -126,13 +143,25 @@ objReturn loadObjFile(const std::string &filename)
         // ver4.g = 0.1;
         // ver4.b = 1.0;
         
-
+        
         // If it's a quad
         if (!v4.empty())
         {
+            // triangles[0].v1 = ver4;
+            Triangle triangle;
+            triangle.v1 = ver4;
+            triangle.v2 = ver2;
+            triangle.v3 = ver1;
+            triangles.push_back(triangle);
+
             renderVertices.push_back(ver4);
             renderVertices.push_back(ver2);
             renderVertices.push_back(ver1);
+
+            triangle.v1 = ver4;
+            triangle.v2 = ver3;
+            triangle.v3 = ver2;
+            triangles.push_back(triangle);
 
             renderVertices.push_back(ver4);
             renderVertices.push_back(ver3);
@@ -140,6 +169,12 @@ objReturn loadObjFile(const std::string &filename)
         }
         // If it's a triangle
         else {
+
+            Triangle triangle;
+            triangle.v1 = ver1;
+            triangle.v2 = ver2;
+            triangle.v3 = ver3;
+            triangles.push_back(triangle);
             renderVertices.push_back(ver1);
             renderVertices.push_back(ver2);
             renderVertices.push_back(ver3);
@@ -172,24 +207,30 @@ objReturn loadObjFile(const std::string &filename)
     }
 
     // Calculate the scaling factors for x, y, and z coordinates
-    float scaleX = 2.0f / (maxX - minX);
-    float scaleY = 2.0f / (maxY - minY);
-    float scaleZ = 2.0f / (maxZ - minZ);
+    float scaleX = 1 / maxX;
+    float scaleY = 1 / maxY;
+    float scaleZ = 1 / maxZ;
 
+    float f = 0.2f;
+    viewportMatrix = glm::mat4(
+        scaleX, 0.0f, 0.0f, 0.0f,
+        0.0f, scaleY, 0.0f, 0.0f,
+        0.0f, 0.0f, scaleZ, 0.0f,
+        0.0f, 0.0f, 0.0f, 1.0f);
 
-    viewportTransformation = glm::mat4(
-        scaleX, 0.0f, 0.0f, -1.0f,
-        0.0f, scaleY, 0.0f, -1.0f,
-        0.0f, 0.0f, scaleZ, -1.0f,
-        0.0f, 0.0f, 0.0f, 1.0f
-    );
+    // viewportMatrix = glm::mat4(
+    //     scaleX, 0.0f, 0.0f, 0.0f,
+    //     0.0f, scaleY, 0.0f, 0.0f,
+    //     0.0f, 0.0f, scaleZ, 0.0f,
+    //     0.0f, 0.0f, 0.0f,    1.0f
+    // );
 
 
     // Convert Vertex objects to floats
     for (size_t i = 0; i < renderVertices.size(); ++i) {
-        renderVerticesArray[i * 6] = scaleX * (renderVertices[i].x - minX) - 1.0f;
-        renderVerticesArray[i * 6 + 1] = scaleY * (renderVertices[i].y - minY) - 1.0f;
-        renderVerticesArray[i * 6 + 2] = scaleZ * (renderVertices[i].z - minZ) - 1.0f;
+        renderVerticesArray[i * 6]     = (renderVertices[i].x);
+        renderVerticesArray[i * 6 + 1] = (renderVertices[i].y);
+        renderVerticesArray[i * 6 + 2] = (renderVertices[i].z);
         renderVerticesArray[i * 6 + 3] = renderVertices[i].r;
         renderVerticesArray[i * 6 + 4] = renderVertices[i].g;
         renderVerticesArray[i * 6 + 5] = renderVertices[i].b;
@@ -373,11 +414,26 @@ int main()
         for (int i = 0; i < obj.size; ++i) {
             glm::vec4 vertexVec(renderVertices[i * 6], renderVertices[i * 6 + 1], renderVertices[i * 6 + 2], 1.0f);
             // vertexVec = rotationMatrix * vertexVec;
-            vertexVec = scalingMatrix * viewportTransformation * rotationMatrix * vertexVec;
+            // vertexVec = scalingMatrix * viewportMatrix * rotationMatrix * vertexVec;
+            // vertexVec = translationMatrix * scalingMatrix * rotationMatrix * vertexVec;
+            // vertexVec = rotationMatrix * vertexVec;
             vertices[i * 6] = vertexVec.x;
             vertices[i * 6 + 1] = vertexVec.y;
             vertices[i * 6 + 2] = vertexVec.z;
         }
+
+        GLuint MatrixID = glGetUniformLocation(shaderProgram, "rotationMatrix");
+        glUniformMatrix4fv(MatrixID, 1, GL_FALSE, &rotationMatrix[0][0]);
+
+        GLuint MatrixID2 = glGetUniformLocation(shaderProgram, "translationMatrix");
+        glUniformMatrix4fv(MatrixID2, 1, GL_FALSE, &translationMatrix[0][0]);
+
+        GLuint MatrixID3 = glGetUniformLocation(shaderProgram, "scalingMatrix");
+        glUniformMatrix4fv(MatrixID3, 1, GL_FALSE, &scalingMatrix[0][0]);
+
+        GLuint MatrixID4 = glGetUniformLocation(shaderProgram, "viewportMatrix");
+        glUniformMatrix4fv(MatrixID4, 1, GL_FALSE, &viewportMatrix[0][0]);
+        
         glBindBuffer(GL_ARRAY_BUFFER, VBO);
         glBufferData(GL_ARRAY_BUFFER, sizeof(vertices), vertices, GL_STATIC_DRAW);
 
@@ -410,7 +466,7 @@ void processInput(GLFWwindow *window)
 {
     if (glfwGetKey(window, GLFW_KEY_ESCAPE) == GLFW_PRESS)
         glfwSetWindowShouldClose(window, true);
-        
+
     glm::vec3 newRotationAxis(0.0f);
     if (glfwGetKey(window, GLFW_KEY_X) == GLFW_PRESS)
     {
@@ -459,28 +515,49 @@ void processInput(GLFWwindow *window)
 
     if (glfwGetKey(window, GLFW_KEY_A) == GLFW_PRESS)
     {
-        std::cout << "pressed A" << std::endl;
-        tX -= 0.5f;
-        tY -= 0.5f;
-        tZ -= 0.5f;
-        scalingMatrix = glm::mat4(
-            sX, 0.0f, 0.0f, tX,
-            0.0f, sY, 0.0f, tY, 
-            0.0f, 0.0f, sZ, tZ, 
-            0.0f, 0.0f, 0.0f, 1.0f);
+        translationVector.x -= 0.01f;
     }
 
     if (glfwGetKey(window, GLFW_KEY_D) == GLFW_PRESS)
     {
-        tX += 0.5f;
-        tY += 0.5f;
-        tZ += 0.5f;
-        scalingMatrix = glm::mat4(
-            sX, 0.0f, 0.0f, tX,
-            0.0f, sY, 0.0f, tY,
-            0.0f, 0.0f, sZ, tZ, 
-            0.0f, 0.0f, 0.0f, 1.0f);
+        translationVector.x += 0.01f;
     }
+
+    if (glfwGetKey(window, GLFW_KEY_W) == GLFW_PRESS)
+    {
+        translationVector.y += 0.01f;
+    }
+
+    if (glfwGetKey(window, GLFW_KEY_S) == GLFW_PRESS)
+    {
+        translationVector.y -= 0.01f;
+    }
+    translationMatrix = glm::translate(glm::mat4(1.0f), translationVector);
+
+    // if (glfwGetKey(window, GLFW_KEY_A) == GLFW_PRESS)
+    // {
+    //     std::cout << "pressed A" << std::endl;
+    //     // tX -= 0.5f;
+    //     tY -= 0.5f;
+    //     // tZ -= 0.5f;
+    //     translationMatrix = glm::mat4(
+    //         1.0f, 0.0f, 0.0f, tX,
+    //         0.0f, 1.0f, 0.0f, tY, 
+    //         0.0f, 0.0f, 1.0f, tZ, 
+    //         0.0f, 0.0f, 0.0f, 1.0f);
+    // }
+
+    // if (glfwGetKey(window, GLFW_KEY_D) == GLFW_PRESS)
+    // {
+    //     // tX += 0.5f;
+    //     tY += 0.5f;
+    //     // tZ += 0.5f;
+    //     translationMatrix = glm::mat4(
+    //         1.0f, 0.0f, 0.0f, tX,
+    //         0.0f, 1.0f, 0.0f, tY,
+    //         0.0f, 0.0f, 1.0f, tZ, 
+    //         0.0f, 0.0f, 0.0f, 1.0f);
+    // }
 }
 
 // glfw: whenever the window size changed (by OS or user resize) this callback function executes
