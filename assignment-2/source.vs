@@ -16,6 +16,3 @@ void main()
     gl_Position = viewportMatrix * translationMatrix * scalingMatrix * rotationMatrix * vec4(aPos, 1.0);
     ourColor = aColor; // setting ourColor to the input color we got from the vertex data
 }
-// let's use the GPU now!!!
-
-// the average time taken per each frame is approx 0.006 seconds!!!
