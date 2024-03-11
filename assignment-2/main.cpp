@@ -51,10 +51,6 @@ struct Vertex {
     float r, g, b;
 };
 
-struct Triangle {
-    Vertex v1, v2, v3;
-};
-
 struct objReturn
 {
     float *vertices;
@@ -67,7 +63,6 @@ objReturn loadObjFile(const std::string &filename)
     std::vector<Vertex> vertices;
     std::vector<Vertex> renderVertices;
     objReturn obj;
-    std::vector<Triangle> triangles;
 
     if (!file.is_open()) {
         std::cerr << "Error: Failed to open file: " << filename << std::endl;
@@ -130,20 +125,10 @@ objReturn loadObjFile(const std::string &filename)
         // If it's a quad
         if (!v4.empty())
         {
-            Triangle triangle;
-            triangle.v1 = ver4;
-            triangle.v2 = ver2;
-            triangle.v3 = ver1;
-            triangles.push_back(triangle);
 
             renderVertices.push_back(ver4);
             renderVertices.push_back(ver2);
             renderVertices.push_back(ver1);
-
-            triangle.v1 = ver4;
-            triangle.v2 = ver3;
-            triangle.v3 = ver2;
-            triangles.push_back(triangle);
 
             renderVertices.push_back(ver4);
             renderVertices.push_back(ver3);
@@ -151,12 +136,6 @@ objReturn loadObjFile(const std::string &filename)
         }
         // If it's a triangle
         else {
-
-            Triangle triangle;
-            triangle.v1 = ver1;
-            triangle.v2 = ver2;
-            triangle.v3 = ver3;
-            triangles.push_back(triangle);
             renderVertices.push_back(ver1);
             renderVertices.push_back(ver2);
             renderVertices.push_back(ver3);
@@ -387,11 +366,14 @@ int main()
     
         for (int i = 0; i < obj.size; ++i) {
             glm::vec4 vertexVec(renderVertices[i * 6], renderVertices[i * 6 + 1], renderVertices[i * 6 + 2], 1.0f);
-            // vertexVec = translationMatrix * viewportMatrix * scalingMatrix * rotationMatrix * vertexVec;
-            vertices[i * 6] = vertexVec.x;
+            // vertexVec = viewportMatrix * translationMatrix * scalingMatrix * rotationMatrix * vertexVec;
+            vertices[i * 6] = vertexVec.x;  
             vertices[i * 6 + 1] = vertexVec.y;
             vertices[i * 6 + 2] = vertexVec.z;
         }
+
+        // reference for sending uniform matrices to the GPU:
+        // https://stackoverflow.com/questions/25342594/passing-uniform-4x4-matrix-to-vertex-shader-program
 
         GLuint MatrixID = glGetUniformLocation(shaderProgram, "rotationMatrix");
         glUniformMatrix4fv(MatrixID, 1, GL_FALSE, &rotationMatrix[0][0]);
@@ -468,11 +450,6 @@ void processInput(GLFWwindow *window)
         sX *= 1.01;
         sY *= 1.01;
         sZ *= 1.01;
-        scalingMatrix = glm::mat4(
-            sX, 0.0f, 0.0f, tX,
-            0.0f, sY, 0.0f, tY,
-            0.0f, 0.0f, sZ, tZ, 
-            0.0f, 0.0f, 0.0f, 1.0f);
     }
     
     if (glfwGetKey(window, GLFW_KEY_DOWN) == GLFW_PRESS)
@@ -480,11 +457,6 @@ void processInput(GLFWwindow *window)
         sX *= 0.99;
         sY *= 0.99;
         sZ *= 0.99;
-        scalingMatrix = glm::mat4(
-            sX, 0.0f, 0.0f, tX,
-            0.0f, sY, 0.0f, tY,
-            0.0f, 0.0f, sZ, tZ, 
-            0.0f, 0.0f, 0.0f, 1.0f);
     }
 
     if (glfwGetKey(window, GLFW_KEY_A) == GLFW_PRESS)
@@ -507,8 +479,13 @@ void processInput(GLFWwindow *window)
         translationVector.y -= 0.01f;
     }
     translationMatrix = glm::translate(glm::mat4(1.0f), translationVector);
+    scalingMatrix = glm::mat4(
+        sX, 0.0f, 0.0f, tX,
+        0.0f, sY, 0.0f, tY,
+        0.0f, 0.0f, sZ, tZ, 
+        0.0f, 0.0f, 0.0f, 1.0f);
 
-    // not working for some reason...
+    // the below code is not working for some reason...
     // if (glfwGetKey(window, GLFW_KEY_A) == GLFW_PRESS)
     // {
     //     std::cout << "pressed A" << std::endl;

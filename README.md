@@ -30,6 +30,7 @@ This assignment involves implementing a basic 3D rendering system using C++, Ope
     assignment-2: This directory contains the source files for the assignment.
 
         main.cpp: The main file containing the rendering loop, OpenGL setup, and input handling logic. It also includes functions for       loading OBJ files, reading shader source files, and handling window resize events.
+        ebo.cpp: The same as main.cpp but by using Element Buffer Objects (instead of seperate triangles data stucture).
         source.vs: The vertex shader source code, responsible for transforming vertex positions and passing color data to the fragment shader.
         source.fs: The fragment shader source code, responsible for determining the final color of each pixel.
 
@@ -41,11 +42,17 @@ This assignment involves implementing a basic 3D rendering system using C++, Ope
 ### Build Instructions
 
 To compile and run the project, use the following command:
+bash
+```
+cd assignment-2
+```
 
 bash
 ```
-g++ main.cpp -o img -I ./Dependencies/glfw-3.3.9.bin.WIN64\include -I ./Dependencies/glew-2.1.0\include -I ./Dependencies/glm -L ./Dependencies/glfw-3.3.9.bin.WIN64\lib-mingw-w64 -L ./Dependencies/glew-2.1.0\lib\Release\x64 -lglfw3dll -lglew32 -lopengl32; & ./img
+g++ main.cpp -o img -I C:\UFL\ComputerGraphics\Graphics\assignment\Dependencies\glfw-3.3.9.bin.WIN64\include -I C:\UFL\ComputerGraphics\Graphics\assignment\Dependencies\glew-2.1.0\include -I C:\UFL\ComputerGraphics\Graphics\assignment\Dependencies\glm -L C:\UFL\ComputerGraphics\Graphics\assignment\Dependencies\glfw-3.3.9.bin.WIN64\lib-mingw-w64 -L C:\UFL\ComputerGraphics\Graphics\assignment\Dependencies\glew-2.1.0\lib\Release\x64 -lglfw3dll -lglew32 -lopengl32; & ./img
 ```
+```
+g++ ebo.cpp -o img -I C:\UFL\ComputerGraphics\Graphics\assignment\Dependencies\glfw-3.3.9.bin.WIN64\include -I C:\UFL\ComputerGraphics\Graphics\assignment\Dependencies\glew-2.1.0\include -I C:\UFL\ComputerGraphics\Graphics\assignment\Dependencies\glm -L C:\UFL\ComputerGraphics\Graphics\assignment\Dependencies\glfw-3.3.9.bin.WIN64\lib-mingw-w64 -L C:\UFL
 
 If you're using MacOS or Linux make sure to replace path/to/glew-2.1.0, path/to/glfw-3.3.9.bin.WIN64 and path/to/glm with the actual paths where you have stored the dependencies.
 bash

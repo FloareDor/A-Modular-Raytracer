@@ -10,12 +10,12 @@ out vec3 ourColor; // output a color to the fragment shader
 
 void main()
 {
-    gl_Position = translationMatrix * viewportMatrix * scalingMatrix * rotationMatrix *  vec4(aPos, 1.0);
-    // gl_Position =    viewportMatrix * vec4(aPos, 1.0);
     // gl_Position = vec4(aPos, 1.0);
-    ourColor = aColor; // set ourColor to the input color we got from the vertex data
+
+    // comment this and uncomment the matrix * vector operation in ebo.cpp or main.cpp to use CPU instead of GPU for matrix transformations
+    gl_Position = viewportMatrix * translationMatrix * scalingMatrix * rotationMatrix * vec4(aPos, 1.0);
+    ourColor = aColor; // setting ourColor to the input color we got from the vertex data
 }
+// let's use the GPU now!!!
 
-// we're using the GPU now for transformations!!
-
-// GPU is clearly faster by 2 times approx!
+// the average time taken per each frame is approx 0.006 seconds!!!

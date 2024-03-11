@@ -14,6 +14,18 @@
 #include<./glm.hpp>
 #include <./gtc/matrix_transform.hpp>
 
+
+float rotationAngle = glm::radians(0.0f); // 45 degrees
+
+// Rotation axis (x, y, z)
+glm::vec3 rotationAxis(0.0f, 1.0f, 0.0f);
+
+glm::mat4 rotationMatrix = glm::rotate(glm::mat4(1.0f), rotationAngle, rotationAxis);
+
+glm::vec3 translationVector(0.0f, 0.0f, 0.0f);
+glm::mat4 translationMatrix = glm::translate(glm::mat4(1.0f), translationVector);
+
+
 glm::mat4 viewportMatrix = glm::mat4(
     1, 0.0f, 0.0f, 0.0f,
     0.0f, 1, 0.0f, 0.0f,
@@ -73,13 +85,16 @@ objReturn loadObjFile(const std::string &filename)
             if (firstChar == 'v' && iss.peek() == ' ') {
                 Vertex vertex;
                 iss >> vertex.x >> vertex.y >> vertex.z;
+                maxX = std::max(maxX, vertex.x);
+                maxY = std::max(maxY, vertex.y);
+                maxZ = std::max(maxZ, vertex.z);
                 // Set color based on coordinates: red for x, green for y, blue for z
                 vertex.r = (vertex.x + 1.0f) / 2.0f; // Map x from [-1, 1] to [0, 1]
                 vertex.g = (vertex.y + 1.0f) / 2.0f; // Map y from [-1, 1] to [0, 1]
                 vertex.b = (vertex.z + 1.0f) / 2.0f; // Map z from [-1, 1] to [0, 1]
-                vertex.r = 0.45f;
-                vertex.g = 0.3f;
-                vertex.b = 0.7f;
+                // vertex.r = 0.45f;
+                // vertex.g = 0.3f;
+                // vertex.b = 0.7f;
 
                 vertices.push_back(vertex.x);
                 vertices.push_back(vertex.y);
@@ -293,24 +308,17 @@ int main()
     //     vertices[i] = renderVertices[i];
     // }
 
-    objReturn obj = loadObjFile("data/data/cube.obj");
+    objReturn obj = loadObjFile("data/data/cow.obj");
     float *renderVertices = obj.vertices;
     int *indices = obj.indices;
     float vertices[obj.verticesSize];
-
-    for(int i = 0; i < obj.verticesSize / 6; i++){
-        std::cout << obj.verticesSize/6 << ": " << renderVertices[i * 6] << " " << renderVertices[i * 6 + 1] << " " << renderVertices[(i * 6)+2] << " Colors: " << renderVertices[i * 6+3] << " " << renderVertices[i * 6 + 4] << " " << renderVertices[(i * 6)+5] << std::endl;
-    }
-
-    for(int i = 0; i < obj.indicesSize/3; i++){
-        std::cout << obj.indicesSize/3 << ": " << indices[i * 3] << " " << indices[i * 3 + 1] << " " << indices[(i * 3)+2] << std::endl;
-    }
 
     for (int i = 0; i < obj.verticesSize; i++)
     {
         vertices[i] = renderVertices[i];
     }
 
+    // reference I used for implementing EBO: https://learnopengl.com/Getting-started/Hello-Triangle
     unsigned int VBO, VAO, EBO;
     glGenVertexArrays(1, &VAO);
     glGenBuffers(1, &VBO);
@@ -343,8 +351,13 @@ int main()
 
     // render loop
     // -----------
-    while (!glfwWindowShouldClose(window))
-    {
+    double previousTime = glfwGetTime();
+    while(!glfwWindowShouldClose(window))
+    {   
+        double currentTime = glfwGetTime();
+        double elapsedTime = currentTime - previousTime;
+        std::cout << "Time taken for this frame: " << elapsedTime << " seconds" << std::endl;
+        previousTime = currentTime;
 
         processInput(window);
         // Clear the color buffer
@@ -355,11 +368,26 @@ int main()
         for (int i = 0; i < obj.verticesSize/6; ++i) {
             // std::cout << vertices[i * 6] << " " << vertices[i * 6 + 1] << " " << vertices[i * 6 + 2] << std::endl;
             glm::vec4 vertexVec(renderVertices[i * 6], renderVertices[i * 6 + 1], renderVertices[i * 6 + 2], 1.0f);
-            vertexVec = scalingMatrix * vertexVec;
+
+            // uncomment this and comment the matrix * vector operation in source.vs to use CPU instead of GPU for matrix transformations
+            // vertexVec = viewportMatrix * translationMatrix * scalingMatrix * rotationMatrix * vertexVec;
             vertices[i * 6] = vertexVec.x;
             vertices[i * 6 + 1] = vertexVec.y;
             vertices[i * 6 + 2] = vertexVec.z;
         }
+        // the avg is approx 0.019 seconds!!
+        GLuint MatrixID = glGetUniformLocation(shaderProgram, "rotationMatrix");
+        glUniformMatrix4fv(MatrixID, 1, GL_FALSE, &rotationMatrix[0][0]);
+
+        GLuint MatrixID2 = glGetUniformLocation(shaderProgram, "translationMatrix");
+        glUniformMatrix4fv(MatrixID2, 1, GL_FALSE, &translationMatrix[0][0]);
+
+        GLuint MatrixID3 = glGetUniformLocation(shaderProgram, "scalingMatrix");
+        glUniformMatrix4fv(MatrixID3, 1, GL_FALSE, &scalingMatrix[0][0]);
+
+        GLuint MatrixID4 = glGetUniformLocation(shaderProgram, "viewportMatrix");
+        glUniformMatrix4fv(MatrixID4, 1, GL_FALSE, &viewportMatrix[0][0]);
+
         glBindBuffer(GL_ARRAY_BUFFER, VBO);
         glBufferData(GL_ARRAY_BUFFER, obj.verticesSize * sizeof(float), vertices, GL_STATIC_DRAW);
 
@@ -396,16 +424,33 @@ void processInput(GLFWwindow *window)
     if (glfwGetKey(window, GLFW_KEY_ESCAPE) == GLFW_PRESS)
         glfwSetWindowShouldClose(window, true);
 
+    glm::vec3 newRotationAxis(0.0f);
+    if (glfwGetKey(window, GLFW_KEY_X) == GLFW_PRESS)
+    {
+        newRotationAxis.x = 1.0f;
+    }
+    if (glfwGetKey(window, GLFW_KEY_Y) == GLFW_PRESS)
+    {
+        newRotationAxis.y = 1.0f;
+    }
+    if (glfwGetKey(window, GLFW_KEY_Z) == GLFW_PRESS)
+    {
+        newRotationAxis.z = 1.0f;
+    }
+
+    if (newRotationAxis != glm::vec3(0.0f))
+    {
+        rotationAxis = glm::normalize(newRotationAxis);
+        rotationAngle += glm::radians(2.0f);
+        glm::mat4 rotationStep = glm::rotate(glm::mat4(1.0f), glm::radians(0.75f), rotationAxis);
+        rotationMatrix = rotationStep * rotationMatrix;
+    }
+
     if (glfwGetKey(window, GLFW_KEY_UP) == GLFW_PRESS)
     {
         sX *= 1.01;
         sY *= 1.01;
         sZ *= 1.01;
-        scalingMatrix = glm::mat4(
-            sX, 0.0f, 0.0f, 0.0f,
-            0.0f, sY, 0.0f, 0.0f,
-            0.0f, 0.0f, sZ, 0.0f, 
-            0.0f, 0.0f, 0.0f, 1.0f);
     }
     
     if (glfwGetKey(window, GLFW_KEY_DOWN) == GLFW_PRESS)
@@ -413,12 +458,34 @@ void processInput(GLFWwindow *window)
         sX *= 0.99;
         sY *= 0.99;
         sZ *= 0.99;
-        scalingMatrix = glm::mat4(
-            sX, 0.0f, 0.0f, 0.0f,
-            0.0f, sY, 0.0f, 0.0f,
-            0.0f, 0.0f, sZ, 0.0f, 
-            0.0f, 0.0f, 0.0f, 1.0f);
+
     }
+
+    if (glfwGetKey(window, GLFW_KEY_A) == GLFW_PRESS)
+    {
+        translationVector.x -= 0.01f;
+    }
+
+    if (glfwGetKey(window, GLFW_KEY_D) == GLFW_PRESS)
+    {
+        translationVector.x += 0.01f;
+    }
+
+    if (glfwGetKey(window, GLFW_KEY_W) == GLFW_PRESS)
+    {
+        translationVector.y += 0.01f;
+    }
+
+    if (glfwGetKey(window, GLFW_KEY_S) == GLFW_PRESS)
+    {
+        translationVector.y -= 0.01f;
+    }
+    translationMatrix = glm::translate(glm::mat4(1.0f), translationVector);
+    scalingMatrix = glm::mat4(
+        sX, 0.0f, 0.0f, 0.0f,
+        0.0f, sY, 0.0f, 0.0f,
+        0.0f, 0.0f, sZ, 0.0f,
+        0.0f, 0.0f, 0.0f, 1.0f);
 }
 
 // glfw: whenever the window size changed (by OS or user resize) this callback function executes
