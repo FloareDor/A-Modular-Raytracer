@@ -9,11 +9,12 @@ uniform mat4 scalingMatrix;
 uniform mat4 viewportMatrix;
 uniform mat4 perspectiveMatrix;
 uniform mat4 orthographicMatrix;
+uniform mat4 cameraMatrix;
 
 out vec3 ourColor;
 
 void main()
 {
-    gl_Position = viewportMatrix * translationMatrix * scalingMatrix * rotationMatrix * vec4(aPos, 1.0);
+    gl_Position = viewportMatrix * perspectiveMatrix * cameraMatrix * translationMatrix * rotationMatrix * scalingMatrix * vec4(aPos, 1.0);
     ourColor = aColor;
 }

@@ -49,8 +49,8 @@ glm::vec3 lightColor(1.0f, 0.5f, 1.0f);
 
 glm::vec3 objectColor(1.0f, 0.5f, 0.31f);
 
-glm::mat4 viewMatrix = glm::lookAt(
-    glm::vec3(0.0f, 0.0f, 0.0f), // Camera position
+glm::mat4 cameraMatrix = glm::lookAt(
+    glm::vec3(0.0f, 0.0f, -1.0f), // Camera position
     glm::vec3(0.0f, 0.0f, 0.0f), // Look at position
     glm::vec3(0.0f, 1.0f, 0.0f)  // Up vector
 );
@@ -86,17 +86,17 @@ const unsigned int SCR_HEIGHT = 600;
 
 float fov = glm::radians(120.0f); // Field of View in radians
 float aspectRatio = (float)SCR_WIDTH / (float)SCR_HEIGHT; // Aspect ratio of the window
-float nearPlane = 0.5f; // Near clipping plane distance
-float farPlane = 1.0f; // Far clipping plane distance
+float nearPlane = 0.1f; // Near clipping plane distance
+float farPlane = 3.0f; // Far clipping plane distance
 
 glm::mat4 perspectiveMatrix = glm::perspective(fov, aspectRatio, nearPlane, farPlane);
 
-float left = -1.0f;
-float right = 1.0f;
-float bottom = -1.0f;
-float top = 1.0f;
+float left = -10.0f;
+float right = 10.0f;
+float bottom = -10.0f;
+float top = 10.0f;
 float near = 0.1f;
-float far = 100.0f;
+float far = 3.0f;
 
 glm::mat4 orthographicMatrix = glm::ortho(left, right, bottom, top, near, far);
 
@@ -306,8 +306,8 @@ int main()
         GLuint perspectiveMatrixID = glGetUniformLocation(shaderProgram, "perspectiveMatrix");
         glUniformMatrix4fv(perspectiveMatrixID, 1, GL_FALSE, &perspectiveMatrix[0][0]);
 
-        GLint viewLoc = glGetUniformLocation(shaderProgram, "viewMatrix");
-        glUniformMatrix4fv(viewLoc, 1, GL_FALSE, &viewMatrix[0][0]);
+        GLint viewLoc = glGetUniformLocation(shaderProgram, "cameraMatrix");
+        glUniformMatrix4fv(viewLoc, 1, GL_FALSE, &cameraMatrix[0][0]);
 
         GLint lightColorLoc = glGetUniformLocation(shaderProgram, "lightColor");
         glUniform3fv(lightColorLoc, 1, &lightColor[0]);
