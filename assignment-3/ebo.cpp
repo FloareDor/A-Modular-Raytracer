@@ -528,24 +528,15 @@ void processInput(GLFWwindow *window)
     float cameraSpeed = 0.01f;
     if (glfwGetKey(window, GLFW_KEY_W) == GLFW_PRESS)
         cameraPos += cameraSpeed * cameraFront;
-        lightPos.x = cameraPos.x;
-        lightPos.y = cameraPos.y;
-        lightPos.z = cameraPos.z;
     if (glfwGetKey(window, GLFW_KEY_S) == GLFW_PRESS)
         cameraPos -= cameraSpeed * cameraFront;
-        lightPos.x = cameraPos.x;
-        lightPos.y = cameraPos.y;
-        lightPos.z = cameraPos.z;
     if (glfwGetKey(window, GLFW_KEY_A) == GLFW_PRESS)
         cameraPos -= glm::normalize(glm::cross(cameraFront, cameraUp)) * cameraSpeed;
-        lightPos.x = cameraPos.x;
-        lightPos.y = cameraPos.y;
-        lightPos.z = cameraPos.z;
     if (glfwGetKey(window, GLFW_KEY_D) == GLFW_PRESS)
         cameraPos += glm::normalize(glm::cross(cameraFront, cameraUp)) * cameraSpeed;
-        lightPos.x = cameraPos.x;
-        lightPos.y = cameraPos.y;
-        lightPos.z = cameraPos.z;
+    // lightPos.x = cameraPos.x;
+    // lightPos.y = cameraPos.y;
+    // lightPos.z = cameraPos.z;
 
     // Mouse input
     static bool firstMouse = true;
