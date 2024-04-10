@@ -2,45 +2,31 @@
 
 out vec4 FragColor;
 
-flat in vec3 Normal;
+in vec3 Normal;
 in vec3 FragPos;
 
 uniform vec3 lightPos;
 uniform vec3 lightColor;
 uniform vec3 objectColor;
-uniform vec3 viewPos;
-
-float near = 0.1;
-float far  = 3.0;
-
-float ambientShading(float lightIntensity, vec3 objectColor) {
-    float ambientCoefficient = 0.000001; // Ambient intensity
-    // ambient shading model
-    float ambientIntensity = ambientCoefficient * lightIntensity;
-    return ambientIntensity;
-}
-
-vec3 diffuseShading(float lightIntensity, vec3 objectColor, vec3 intersectionPoint, vec3 normal, vec3 VL, vec3 VE) {
-    float diffuseCoefficient = 0.9;
-
-    float diffuseIntensity = diffuseCoefficient * lightIntensity * max(0.1, dot(normal, VL));
-    return clamp(objectColor * diffuseIntensity, 0.0, 1.0);
-}
+uniform vec3 cameraPos;
 
 void main()
 {
+    float ambientStrength = 0.3;
+    vec3 ambient = ambientStrength * lightColor;
 
-    float lightIntensity = 1.0;
-    // Ambient lighting
-    float ambientIntensity = ambientShading(lightIntensity, objectColor);
-    vec3 ambient = ambientIntensity * lightColor;
-
-    // Diffuse lighting
+    float diffuseStrength = 2.0;
     vec3 norm = normalize(Normal);
     vec3 lightDir = normalize(lightPos - FragPos);
-    vec3 viewDir = normalize(viewPos - FragPos);
-    vec3 diffuse = diffuseShading(lightIntensity, objectColor, FragPos, norm, lightDir, viewDir);
+    float diff = max(dot(norm, lightDir), 0.0);
+    vec3 diffuse = diffuseStrength * diff * lightColor;
 
-    vec3 result = (ambient + diffuse);
+    float specularStrength = 2;
+    vec3 viewDir = normalize(cameraPos - FragPos);
+    vec3 reflectDir = reflect(-lightDir, norm);
+    float spec = pow(max(dot(viewDir, reflectDir), 0.0), 64);
+    vec3 specular = specularStrength * spec * lightColor; 
+
+    vec3 result = (ambient + diffuse + specular) * objectColor;
     FragColor = vec4(result, 1.0);
 }
