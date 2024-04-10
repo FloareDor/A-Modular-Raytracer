@@ -19,8 +19,86 @@ github: https://github.com/FloareDor/A-Modular-Raytracer
 #### Summarized topics:
 Introduction, basic linear algebra, geometric transformations, shading and illumination, rendering algorithms, anti-aliasing techniques, modeling curves and surfaces, advance topics (time permitting).
 
+## Assignment-3
+
+## [Report Link](https://docs.google.com/document/d/1DTAsHPCa5sUCt-7-Fp10aKigKIGVX1oMG3Pj3SDiDgs/edit?usp=sharing)
+
+### Overview
+
+This assignment involves extending the basic 3D rendering system from Assignment 2 using C++, OpenGL, and GLFW. The project includes new functionality for implementing perspective projection, visualizing the z-buffer, and adding lighting effects using Gouraud and Phong shading. The GLFW library is used for window management, and GLEW is used for OpenGL extension loading.
+
+### Project Structure
+
+assignment-3: This directory contains the source files for the assignment.
+
+    main.cpp: The main file containing the rendering loop, OpenGL setup, and input handling logic. It also includes functions for loading OBJ files, reading shader source files, and handling window resize events.
+
+    objLoader.cpp: Contains functions for loading OBJ files and preparing vertex and index data for rendering.
+
+    flat.vs: Vertex shader source code for flat shading.
+    flat.fs: Fragment shader source code for flat shading.
+
+    gourad.vs: Vertex shader source code for Gouraud shading.
+    gourad.fs: Fragment shader source code for Gouraud shading.
+
+    phong.vs: Vertex shader source code for Phong shading.
+    phong.fs: Fragment shader source code for Phong shading.
+
+    z.fs: Fragment shader source code for visualizing raw depth values (z coordinate).
+    z-prime.fs: Fragment shader source code for visualizing linearized depth values.
+
+Dependencies: This directory contains external dependencies required for the project (same as Assignment 2).
+
+    glew-2.1.0: GLEW library version 2.1.0, used for OpenGL extension loading.
+
+    glfw-3.3.9.bin.WIN64: GLFW library version 3.3.9 for window management.
+
+    glm: GLM (OpenGL Mathematics Library): Used for matrix operations and vector types.
+
+### Build Instructions
+
+To compile and run the project, use the same instructions as Assignment 2:
+
+```bash
+
+cd assignment-3
+
+g++ main.cpp -o viewer -I path/to/glew-2.1.0/include -I path/to/glfw-3.3.9.bin.WIN64/include \
+-I path/to/glm \
+-L path/to/glfw-3.3.9.bin.WIN64/lib-mingw-w64 -L path/to/glew-2.1.0/lib/Release/x64 \
+-lglfw3dll -lglew32 -lopengl32 && ./viewer
+
+```
+
+Replace path/to/glew-2.1.0, path/to/glfw-3.3.9.bin.WIN64, and path/to/glm with the actual paths where you have stored the dependencies.
+
+### Usage
+
+    Use 'W', 'A', 'S', 'D' for camera movement (FPS-style controls)
+    Use the mouse to rotate the camera
+    Press 'F' or 'G' to change the field of view (perspective projection)
+    Use 'U', 'J', 'Y', 'H', 'I', 'K' to control the light position
+    Press 'N' or 'M' for scaling the object
+    Press 'X' or 'Y' or 'Z' for rotation around the respectives axises
+    Use 'Up', 'Down', 'Left', 'Right' arrow keys for moving the object around
+
+Note: The 'C', 'V', 'B' controls for switching between shading techniques are not currently working. To change the type of shading, modify line 266 in main.cpp:
+
+```cpp
+unsigned int currentShaderProgram = shaderProgram;
+```
+
+Replace shaderProgram with one of the following options:
+
+    `gouradShaderProgram` for Gouraud shading
+    `flatShaderProgram` for flat shading
+    `phongShaderProgram` for Phong shading
+
+The project extends the previous assignment by adding perspective projection, z-buffer visualization (using z.fs and z-prime.fs shaders), and lighting effects using Gouraud and Phong shading. The report should document and describe each implemented functionality, including the effects of changing perspective matrix parameters, verifying depth values, and comparing the different shading techniques.
+
 ## Assignment-2
 
+## [Report Link](https://docs.google.com/document/d/1d7grJcv-Z8uK306yEp6ZM9QUHI4miLZKDYFT4ripV4Q/edit?usp=sharing) 
 ### Overview
 
 This assignment involves implementing a basic 3D rendering system using C++, OpenGL, and GLFW. The project includes functionality for loading and rendering 3D models from OBJ files, applying transformations (rotation, scaling, translation), and handling user input. The GLFW library is used for window management, and GLEW is used for OpenGL extension loading.
