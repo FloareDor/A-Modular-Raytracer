@@ -44,16 +44,25 @@ glm::mat4 scalingMatrix = glm::mat4(
     0.0f, 0.0f, 0.0f, 1.0f
 );
 
-glm::vec3 lightPos(1.2f, 1.0f, 2.0f);
-glm::vec3 lightColor(1.0f, 0.5f, 1.0f);
+glm::vec3 lightPos(6.5f, 15.0f, 75.3f);
+glm::vec3 lightColor(1.0f, 1.0f, 1.0f);
 
-glm::vec3 objectColor(1.0f, 0.5f, 0.31f);
+glm::vec3 objectColor(0.255f, 0.205f, 0.231f);
 
-glm::mat4 cameraMatrix = glm::lookAt(
-    glm::vec3(0.0f, 0.0f, -1.0f), // Camera position
-    glm::vec3(0.0f, 0.0f, 0.0f), // Look at position
-    glm::vec3(0.0f, 1.0f, 0.0f)  // Up vector
-);
+// glm::mat4 cameraMatrix = glm::lookAt(
+//     glm::vec3(0.0f, 0.0f, -1.0f), // Camera position
+//     glm::vec3(0.0f, 0.0f, 0.0f), // Look at position
+//     glm::vec3(0.0f, 1.0f, 0.0f)  // Up vector
+// );
+
+glm::vec3 cameraPos = glm::vec3(0.0f, 0.0f, -1.0f);
+glm::vec3 cameraFront = glm::vec3(0.0f, 0.0f, -1.0f);
+glm::vec3 cameraUp = glm::vec3(0.0f, 1.0f, 0.0f);
+
+float yaw = -90.0f;
+float pitch = 0.0f;
+
+glm::mat4 cameraMatrix = glm::lookAt(cameraPos, cameraPos + cameraFront, cameraUp);
 
 struct Vertex {
     float x, y, z;
@@ -87,7 +96,7 @@ const unsigned int SCR_HEIGHT = 600;
 float fov = glm::radians(120.0f); // Field of View in radians
 float aspectRatio = (float)SCR_WIDTH / (float)SCR_HEIGHT; // Aspect ratio of the window
 float nearPlane = 0.1f; // Near clipping plane distance
-float farPlane = 3.0f; // Far clipping plane distance
+float farPlane = 10.0f; // Far clipping plane distance
 
 glm::mat4 perspectiveMatrix = glm::perspective(fov, aspectRatio, nearPlane, farPlane);
 
@@ -120,6 +129,19 @@ glm::mat4 orthographicMatrix = glm::ortho(left, right, bottom, top, near, far);
 
 const char * vertexShaderSource = readFile("source.vs");
 const char * fragmentShaderSource = readFile("source.fs");
+
+const char * flatVertexShaderSource = readFile("flat.vs");
+const char * flatFragmentShaderSource = readFile("flat.fs");
+
+const char * gouradVertexShaderSource = readFile("gourad.vs");
+const char * gouradFragmentShaderSource = readFile("gourad.fs");
+
+const char * phongVertexShaderSource = readFile("phong.vs");
+const char * phongFragmentShaderSource = readFile("phong.fs");
+unsigned int currentShaderProgram;
+unsigned int phongShaderProgram;
+unsigned int gouraudShaderProgram;
+unsigned int flatShaderProgram;
 // #define USE_PERSPECTIVE
 
 int main()
@@ -128,7 +150,7 @@ int main()
     // ------------------------------
     glfwInit();
     glEnable(GL_DEPTH_TEST);
-    glDepthFunc(GL_ALWAYS); 
+    glDepthFunc(GL_LESS); 
     glfwWindowHint(GLFW_CONTEXT_VERSION_MAJOR, 3);
     glfwWindowHint(GLFW_CONTEXT_VERSION_MINOR, 3);
     glfwWindowHint(GLFW_OPENGL_PROFILE, GLFW_OPENGL_CORE_PROFILE);
@@ -152,11 +174,11 @@ int main()
     // // glew: load all OpenGL function pointers
     glewInit();
     glEnable(GL_DEPTH_TEST);
-    glDepthFunc(GL_ALWAYS);  
+    glDepthFunc(GL_LESS);  
     // build and compile our shader program
     // ------------------------------------
     // vertex shader
-    unsigned int vertexShader = glCreateShader(GL_VERTEX_SHADER);
+unsigned int vertexShader = glCreateShader(GL_VERTEX_SHADER);
     glShaderSource(vertexShader, 1, &vertexShaderSource, NULL);
     glCompileShader(vertexShader);
     // check for shader compile errors
@@ -179,11 +201,52 @@ int main()
         glGetShaderInfoLog(fragmentShader, 512, NULL, infoLog);
         std::cout << "ERROR::SHADER::FRAGMENT::COMPILATION_FAILED\n" << infoLog << std::endl;
     }
+
+    // Flat shading shaders
+    unsigned int flatVertexShader = glCreateShader(GL_VERTEX_SHADER);
+    glShaderSource(flatVertexShader, 1, &flatVertexShaderSource, NULL);
+    glCompileShader(flatVertexShader);
+    unsigned int flatFragmentShader = glCreateShader(GL_FRAGMENT_SHADER);
+    glShaderSource(flatFragmentShader, 1, &flatFragmentShaderSource, NULL);
+    glCompileShader(flatFragmentShader);
+
+    // Gouraud shading shaders
+    unsigned int gouradVertexShader = glCreateShader(GL_VERTEX_SHADER);
+    glShaderSource(gouradVertexShader, 1, &gouradVertexShaderSource, NULL);
+    glCompileShader(gouradVertexShader);
+    unsigned int gouradFragmentShader = glCreateShader(GL_FRAGMENT_SHADER);
+    glShaderSource(gouradFragmentShader, 1, &gouradFragmentShaderSource, NULL);
+    glCompileShader(gouradFragmentShader);
+
+    // Phong shading shaders
+    unsigned int phongVertexShader = glCreateShader(GL_VERTEX_SHADER);
+    glShaderSource(phongVertexShader, 1, &phongVertexShaderSource, NULL);
+    glCompileShader(phongVertexShader);
+    unsigned int phongFragmentShader = glCreateShader(GL_FRAGMENT_SHADER);
+    glShaderSource(phongFragmentShader, 1, &phongFragmentShaderSource, NULL);
+    glCompileShader(phongFragmentShader);
+
     // link shaders
     unsigned int shaderProgram = glCreateProgram();
     glAttachShader(shaderProgram, vertexShader);
     glAttachShader(shaderProgram, fragmentShader);
     glLinkProgram(shaderProgram);
+
+    unsigned int flatShaderProgram = glCreateProgram();
+    glAttachShader(flatShaderProgram, flatVertexShader);
+    glAttachShader(flatShaderProgram, flatFragmentShader);
+    glLinkProgram(flatShaderProgram);
+
+    unsigned int gouradShaderProgram = glCreateProgram();
+    glAttachShader(gouradShaderProgram, gouradVertexShader);
+    glAttachShader(gouradShaderProgram, gouradFragmentShader);
+    glLinkProgram(gouradShaderProgram);
+
+    unsigned int phongShaderProgram = glCreateProgram();
+    glAttachShader(phongShaderProgram, phongVertexShader);
+    glAttachShader(phongShaderProgram, phongFragmentShader);
+    glLinkProgram(phongShaderProgram);
+
     // check for linking errors
     glGetProgramiv(shaderProgram, GL_LINK_STATUS, &success);
     if (!success) {
@@ -192,31 +255,17 @@ int main()
     }
     glDeleteShader(vertexShader);
     glDeleteShader(fragmentShader);
+    glDeleteShader(flatVertexShader);
+    glDeleteShader(flatFragmentShader);
+    glDeleteShader(gouradVertexShader);
+    glDeleteShader(gouradFragmentShader);
+    glDeleteShader(phongVertexShader);
+    glDeleteShader(phongFragmentShader);
 
-    // set up vertex data (and buffer(s)) and configure vertex attributes
-    // ------------------------------------------------------------------
-    // float renderVertices[] = {
-    //      0.5f,  0.5f, 0.0f,  // top right
-    //      1.0f,  0.0f, 0.0f,  // red color
-    //      0.5f, -0.5f, 0.0f,  // bottom right
-    //      0.0f,  1.0f, 0.0f,  // green color
-    //     -0.5f, -0.5f, 0.0f,  // bottom left
-    //      0.0f,  0.0f, 1.0f,  // blue color
-    //     -0.5f,  0.5f, 0.0f,  // top left 
-    //      1.0f,  1.0f, 0.0f   // yellow color
-    // };
-    // unsigned int indices[] = {  // note that we start from 0!
-    //     0, 1, 3,   // first triangle
-    //     1, 2, 3    // second triangle
-    // };
-    // float vertices[sizeof(renderVertices)];
+    // Set default shading technique to flat shading
+    unsigned int currentShaderProgram = shaderProgram;
 
-    // for (int i = 0; i < sizeof(renderVertices); i++)
-    // {
-    //     vertices[i] = renderVertices[i];
-    // }
-
-    objReturn obj = loadObjFile("data/data/pig.obj");
+    objReturn obj = loadObjFile("data/data/sphere.obj");
     float *renderVertices = obj.vertices;
     float *normals = obj.normals;
     int *indices = obj.indices;
@@ -268,7 +317,10 @@ int main()
     {   
         double currentTime = glfwGetTime();
         double elapsedTime = currentTime - previousTime;
+        std::cout << lightPos.x << " " << lightPos.y << " " << lightPos.z << std::endl;
+        // std::cout << "fov: " << fov << " " << "nearPlane: " << nearPlane << " " << "farPlane: " << farPlane << std::endl;
         // std::cout << "Time taken for this frame: " << elapsedTime << " seconds" << std::endl;
+        // std::cout << currentShaderProgram  << std::endl;
         previousTime = currentTime;
 
         processInput(window);
@@ -276,7 +328,7 @@ int main()
         glClearColor(0.2f, 0.3f, 0.3f, 1.0f);
         glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
-        glUseProgram(shaderProgram);
+        glUseProgram(currentShaderProgram);
         for (int i = 0; i < obj.verticesSize/6; ++i) {
             // std::cout << vertices[i * 6] << " " << vertices[i * 6 + 1] << " " << vertices[i * 6 + 2] << std::endl;
             glm::vec4 vertexVec(renderVertices[i * 6], renderVertices[i * 6 + 1], renderVertices[i * 6 + 2], 1.0f);
@@ -288,32 +340,38 @@ int main()
             vertices[i * 6 + 2] = vertexVec.z;
         }
         // the avg is approx 0.019 seconds!!
-        GLuint MatrixID = glGetUniformLocation(shaderProgram, "rotationMatrix");
+        GLuint MatrixID = glGetUniformLocation(currentShaderProgram, "rotationMatrix");
         glUniformMatrix4fv(MatrixID, 1, GL_FALSE, &rotationMatrix[0][0]);
 
-        GLuint MatrixID2 = glGetUniformLocation(shaderProgram, "translationMatrix");
+        GLuint MatrixID2 = glGetUniformLocation(currentShaderProgram, "translationMatrix");
         glUniformMatrix4fv(MatrixID2, 1, GL_FALSE, &translationMatrix[0][0]);
 
-        GLuint MatrixID3 = glGetUniformLocation(shaderProgram, "scalingMatrix");
+        GLuint MatrixID3 = glGetUniformLocation(currentShaderProgram, "scalingMatrix");
         glUniformMatrix4fv(MatrixID3, 1, GL_FALSE, &scalingMatrix[0][0]);
 
-        GLuint MatrixID4 = glGetUniformLocation(shaderProgram, "viewportMatrix");
+        GLuint MatrixID4 = glGetUniformLocation(currentShaderProgram, "viewportMatrix");
         glUniformMatrix4fv(MatrixID4, 1, GL_FALSE, &viewportMatrix[0][0]);
 
-        GLuint orthographicMatrixID = glGetUniformLocation(shaderProgram, "orthographicMatrix");
+        GLuint orthographicMatrixID = glGetUniformLocation(currentShaderProgram, "orthographicMatrix");
         glUniformMatrix4fv(orthographicMatrixID, 1, GL_FALSE, &orthographicMatrix[0][0]);
 
-        GLuint perspectiveMatrixID = glGetUniformLocation(shaderProgram, "perspectiveMatrix");
+        GLuint perspectiveMatrixID = glGetUniformLocation(currentShaderProgram, "perspectiveMatrix");
         glUniformMatrix4fv(perspectiveMatrixID, 1, GL_FALSE, &perspectiveMatrix[0][0]);
 
-        GLint viewLoc = glGetUniformLocation(shaderProgram, "cameraMatrix");
+        GLint viewLoc = glGetUniformLocation(currentShaderProgram, "cameraMatrix");
         glUniformMatrix4fv(viewLoc, 1, GL_FALSE, &cameraMatrix[0][0]);
 
-        GLint lightColorLoc = glGetUniformLocation(shaderProgram, "lightColor");
+        GLint lightColorLoc = glGetUniformLocation(currentShaderProgram, "lightColor");
         glUniform3fv(lightColorLoc, 1, &lightColor[0]);
 
-        GLint objectColorLoc = glGetUniformLocation(shaderProgram, "objectColor");
+        GLint objectColorLoc = glGetUniformLocation(currentShaderProgram, "objectColor");
         glUniform3fv(objectColorLoc, 1, &objectColor[0]);
+
+        GLint lightPosLoc = glGetUniformLocation(currentShaderProgram, "lightPos");
+        glUniform3fv(lightPosLoc, 1, &lightPos[0]);
+
+        GLint cameraPosLoc = glGetUniformLocation(currentShaderProgram, "cameraPos");
+        glUniform3fv(cameraPosLoc, 1, &cameraPos[0]);
 
         glBindBuffer(GL_ARRAY_BUFFER, VBO);
         glBufferData(GL_ARRAY_BUFFER, obj.verticesSize * sizeof(float), vertices, GL_STATIC_DRAW);
@@ -336,7 +394,7 @@ int main()
     glDeleteVertexArrays(1, &VAO);
     glDeleteBuffers(1, &VBO);
     glDeleteBuffers(1, &EBO);
-    glDeleteProgram(shaderProgram);
+    glDeleteProgram(currentShaderProgram);
 
     // glfw: terminate, clearing all previously allocated GLFW resources.
     // ------------------------------------------------------------------
@@ -351,36 +409,50 @@ void processInput(GLFWwindow *window)
     if (glfwGetKey(window, GLFW_KEY_ESCAPE) == GLFW_PRESS)
         glfwSetWindowShouldClose(window, true);
 
-    glm::vec3 newRotationAxis(0.0f);
-    if (glfwGetKey(window, GLFW_KEY_X) == GLFW_PRESS)
+    // glm::vec3 newRotationAxis(0.0f);
+    // if (glfwGetKey(window, GLFW_KEY_X) == GLFW_PRESS)
+    // {
+    //     newRotationAxis.x = 1.0f;
+    // }
+    // if (glfwGetKey(window, GLFW_KEY_Y) == GLFW_PRESS)
+    // {
+    //     newRotationAxis.y = 1.0f;
+    // }
+    // if (glfwGetKey(window, GLFW_KEY_Z) == GLFW_PRESS)
+    // {
+    //     newRotationAxis.z = 1.0f;
+    // }
+
+    // if (newRotationAxis != glm::vec3(0.0f))
+    // {
+    //     rotationAxis = glm::normalize(newRotationAxis);
+    //     rotationAngle += glm::radians(2.0f);
+    //     glm::mat4 rotationStep = glm::rotate(glm::mat4(1.0f), glm::radians(0.75f), rotationAxis);
+    //     rotationMatrix = rotationStep * rotationMatrix;
+    // }
+
+    
+    if (glfwGetKey(window, GLFW_KEY_C) == GLFW_PRESS)
     {
-        newRotationAxis.x = 1.0f;
+        currentShaderProgram = phongShaderProgram;
     }
-    if (glfwGetKey(window, GLFW_KEY_Y) == GLFW_PRESS)
+    else if (glfwGetKey(window, GLFW_KEY_V) == GLFW_PRESS)
     {
-        newRotationAxis.y = 1.0f;
+        currentShaderProgram = gouraudShaderProgram;
     }
-    if (glfwGetKey(window, GLFW_KEY_Z) == GLFW_PRESS)
+    else if (glfwGetKey(window, GLFW_KEY_B) == GLFW_PRESS)
     {
-        newRotationAxis.z = 1.0f;
+        currentShaderProgram = flatShaderProgram;
     }
 
-    if (newRotationAxis != glm::vec3(0.0f))
-    {
-        rotationAxis = glm::normalize(newRotationAxis);
-        rotationAngle += glm::radians(2.0f);
-        glm::mat4 rotationStep = glm::rotate(glm::mat4(1.0f), glm::radians(0.75f), rotationAxis);
-        rotationMatrix = rotationStep * rotationMatrix;
-    }
-
-    if (glfwGetKey(window, GLFW_KEY_UP) == GLFW_PRESS)
+    if (glfwGetKey(window, GLFW_KEY_N) == GLFW_PRESS)
     {
         sX *= 1.01;
         sY *= 1.01;
         sZ *= 1.01;
     }
     
-    if (glfwGetKey(window, GLFW_KEY_DOWN) == GLFW_PRESS)
+    if (glfwGetKey(window, GLFW_KEY_M) == GLFW_PRESS)
     {
         sX *= 0.99;
         sY *= 0.99;
@@ -388,22 +460,22 @@ void processInput(GLFWwindow *window)
 
     }
 
-    if (glfwGetKey(window, GLFW_KEY_A) == GLFW_PRESS)
+    if (glfwGetKey(window, GLFW_KEY_LEFT) == GLFW_PRESS)
     {
         translationVector.x -= 0.01f;
     }
 
-    if (glfwGetKey(window, GLFW_KEY_D) == GLFW_PRESS)
+    if (glfwGetKey(window, GLFW_KEY_RIGHT) == GLFW_PRESS)
     {
         translationVector.x += 0.01f;
     }
 
-    if (glfwGetKey(window, GLFW_KEY_W) == GLFW_PRESS)
+    if (glfwGetKey(window, GLFW_KEY_UP) == GLFW_PRESS)
     {
         translationVector.y += 0.01f;
     }
 
-    if (glfwGetKey(window, GLFW_KEY_S) == GLFW_PRESS)
+    if (glfwGetKey(window, GLFW_KEY_DOWN) == GLFW_PRESS)
     {
         translationVector.y -= 0.01f;
     }
@@ -420,14 +492,98 @@ void processInput(GLFWwindow *window)
             fov = fov -  glm::radians(1.0f);
         }
     }
-    if (glfwGetKey(window, GLFW_KEY_LEFT) == GLFW_PRESS)
+    // if (glfwGetKey(window, GLFW_KEY_LEFT) == GLFW_PRESS)
+    // {
+    //     nearPlane = nearPlane + 0.01f;
+    // }
+    // if (glfwGetKey(window, GLFW_KEY_RIGHT) == GLFW_PRESS)
+    // {
+    //     farPlane = farPlane + 0.01f;
+    // }
+    if (glfwGetKey(window, GLFW_KEY_U) == GLFW_PRESS)
     {
-        nearPlane = nearPlane + 0.01f;
+        lightPos.x = lightPos.x + 0.1f;
     }
-    if (glfwGetKey(window, GLFW_KEY_RIGHT) == GLFW_PRESS)
+    if (glfwGetKey(window, GLFW_KEY_J) == GLFW_PRESS)
     {
-        farPlane = farPlane + 0.01f;
+        lightPos.x = lightPos.x - 0.1f;
     }
+    if (glfwGetKey(window, GLFW_KEY_Y) == GLFW_PRESS)
+    {
+        lightPos.y = lightPos.y + 0.1f;
+    }
+    if (glfwGetKey(window, GLFW_KEY_H) == GLFW_PRESS)
+    {
+        lightPos.y = lightPos.y - 0.1f;
+    }
+    if (glfwGetKey(window, GLFW_KEY_I) == GLFW_PRESS)
+    {
+        lightPos.z = lightPos.z + 0.1f;
+    }
+    if (glfwGetKey(window, GLFW_KEY_K) == GLFW_PRESS)
+    {
+        lightPos.z = lightPos.z - 0.1f;
+    }
+
+    float cameraSpeed = 0.01f;
+    if (glfwGetKey(window, GLFW_KEY_W) == GLFW_PRESS)
+        cameraPos += cameraSpeed * cameraFront;
+        lightPos.x = cameraPos.x;
+        lightPos.y = cameraPos.y;
+        lightPos.z = cameraPos.z;
+    if (glfwGetKey(window, GLFW_KEY_S) == GLFW_PRESS)
+        cameraPos -= cameraSpeed * cameraFront;
+        lightPos.x = cameraPos.x;
+        lightPos.y = cameraPos.y;
+        lightPos.z = cameraPos.z;
+    if (glfwGetKey(window, GLFW_KEY_A) == GLFW_PRESS)
+        cameraPos -= glm::normalize(glm::cross(cameraFront, cameraUp)) * cameraSpeed;
+        lightPos.x = cameraPos.x;
+        lightPos.y = cameraPos.y;
+        lightPos.z = cameraPos.z;
+    if (glfwGetKey(window, GLFW_KEY_D) == GLFW_PRESS)
+        cameraPos += glm::normalize(glm::cross(cameraFront, cameraUp)) * cameraSpeed;
+        lightPos.x = cameraPos.x;
+        lightPos.y = cameraPos.y;
+        lightPos.z = cameraPos.z;
+
+    // Mouse input
+    static bool firstMouse = true;
+    static float lastX = SCR_WIDTH / 2.0f;
+    static float lastY = SCR_HEIGHT / 2.0f;
+
+    if (firstMouse)
+    {
+        lastX = SCR_WIDTH / 2.0f;
+        lastY = SCR_HEIGHT / 2.0f;
+        firstMouse = false;
+    }
+
+    double xpos, ypos;
+    glfwGetCursorPos(window, &xpos, &ypos);
+
+    float xoffset = xpos - lastX;
+    float yoffset = lastY - ypos;
+    lastX = xpos;
+    lastY = ypos;
+
+    float sensitivity = 0.3f;
+    xoffset *= sensitivity;
+    yoffset *= sensitivity;
+
+    yaw += xoffset;
+    pitch += yoffset;
+
+    if (pitch > 89.0f)
+        pitch = 89.0f;
+    if (pitch < -89.0f)
+        pitch = -89.0f;
+
+    glm::vec3 direction;
+    direction.x = cos(glm::radians(yaw)) * cos(glm::radians(pitch));
+    direction.y = sin(glm::radians(pitch));
+    direction.z = sin(glm::radians(yaw)) * cos(glm::radians(pitch));
+    cameraFront = glm::normalize(direction);
 
     translationMatrix = glm::translate(glm::mat4(1.0f), translationVector);
     scalingMatrix = glm::mat4(
@@ -436,8 +592,8 @@ void processInput(GLFWwindow *window)
         0.0f, 0.0f, sZ, 0.0f,
         0.0f, 0.0f, 0.0f, 1.0f);
 
-
     perspectiveMatrix = glm::perspective(fov, aspectRatio, nearPlane, farPlane);
+    cameraMatrix = glm::lookAt(cameraPos, cameraPos + cameraFront, cameraUp);
 }
 
 // glfw: whenever the window size changed (by OS or user resize) this callback function executes

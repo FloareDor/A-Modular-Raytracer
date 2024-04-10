@@ -229,6 +229,7 @@ int main()
     // ------------------------------
     glfwInit();
     glEnable(GL_DEPTH_TEST);
+    glDepthFunc(GL_ALWAYS); 
     glfwWindowHint(GLFW_CONTEXT_VERSION_MAJOR, 3);
     glfwWindowHint(GLFW_CONTEXT_VERSION_MINOR, 3);
     glfwWindowHint(GLFW_OPENGL_PROFILE, GLFW_OPENGL_CORE_PROFILE);
@@ -253,6 +254,7 @@ int main()
     // // glew: load all OpenGL function pointers
     glewInit();
     glEnable(GL_DEPTH_TEST);
+    glDepthFunc(GL_ALWAYS); 
 
     // build and compile our shader program
     // ------------------------------------
@@ -298,7 +300,7 @@ int main()
     // ------------------------------------------------------------------
 
     // std::cout << "size of vertices: " << vertices.size() << std::endl;
-    objReturn obj = loadObjFile("data/data/cube.obj");
+    objReturn obj = loadObjFile("data/data/pig.obj");
     float *renderVertices = obj.vertices;
     int size = obj.size * 6;
     std::cout << "size of vertices: " << size << std::endl;
