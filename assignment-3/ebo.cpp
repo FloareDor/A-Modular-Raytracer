@@ -263,13 +263,13 @@ unsigned int vertexShader = glCreateShader(GL_VERTEX_SHADER);
     glDeleteShader(phongFragmentShader);
 
     // Set default shading technique to flat shading
-    unsigned int currentShaderProgram = gouradShaderProgram;
+    unsigned int currentShaderProgram = shaderProgram;
     objReturn obj;
-    if (currentShaderProgram == gouradShaderProgram)
+    if (currentShaderProgram == flatShaderProgram)
     {
-        objReturn obj = loadObjFileForFlatShading("data/data/sphere.obj");
+        obj = loadObjFileForFlatShading("data/data/sphere.obj");
     }else{
-        objReturn obj = loadObjFile("data/data/sphere.obj");
+        obj = loadObjFile("data/data/sphere.obj");
     }
 
     float *renderVertices = obj.vertices;

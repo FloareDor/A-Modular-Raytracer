@@ -49,13 +49,7 @@ glm::vec3 lightColor(1.0f, 1.0f, 1.0f);
 
 glm::vec3 objectColor(0.255f, 0.205f, 0.231f);
 
-// glm::mat4 cameraMatrix = glm::lookAt(
-//     glm::vec3(0.0f, 0.0f, -1.0f), // Camera position
-//     glm::vec3(0.0f, 0.0f, 0.0f), // Look at position
-//     glm::vec3(0.0f, 1.0f, 0.0f)  // Up vector
-// );
-
-glm::vec3 cameraPos = glm::vec3(0.0f, 0.0f, -1.0f);
+glm::vec3 cameraPos = glm::vec3(3.48822f, 0.318682f, 0.405434f);
 glm::vec3 cameraFront = glm::vec3(0.0f, 0.0f, -1.0f);
 glm::vec3 cameraUp = glm::vec3(0.0f, 1.0f, 0.0f);
 
@@ -265,11 +259,11 @@ unsigned int vertexShader = glCreateShader(GL_VERTEX_SHADER);
     // Set default shading technique to flat shading
     unsigned int currentShaderProgram = gouradShaderProgram;
     objReturn obj;
-    if (currentShaderProgram == gouradShaderProgram)
+    if (currentShaderProgram == flatShaderProgram)
     {
-        objReturn obj = loadObjFileForFlatShading("data/data/sphere.obj");
+        obj = loadObjFileForFlatShading("data/data/sphere.obj");
     }else{
-        objReturn obj = loadObjFile("data/data/sphere.obj");
+        obj = loadObjFile("data/data/sphere.obj");
     }
 
     float *renderVertices = obj.vertices;
@@ -320,7 +314,7 @@ unsigned int vertexShader = glCreateShader(GL_VERTEX_SHADER);
     {   
         double currentTime = glfwGetTime();
         double elapsedTime = currentTime - previousTime;
-        // std::cout << lightPos.x << " " << lightPos.y << " " << lightPos.z << std::endl;
+        // std::cout << cameraPos.x << " " << cameraPos.y << " " << cameraPos.z << std::endl;
         // std::cout << "fov: " << fov << " " << "nearPlane: " << nearPlane << " " << "farPlane: " << farPlane << std::endl;
         // std::cout << "Time taken for this frame: " << elapsedTime << " seconds" << std::endl;
         // std::cout << currentShaderProgram  << std::endl;
