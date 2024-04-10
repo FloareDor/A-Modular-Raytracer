@@ -412,19 +412,19 @@ void processInput(GLFWwindow *window)
     if (glfwGetKey(window, GLFW_KEY_ESCAPE) == GLFW_PRESS)
         glfwSetWindowShouldClose(window, true);
 
-    // glm::vec3 newRotationAxis(0.0f);
-    // if (glfwGetKey(window, GLFW_KEY_X) == GLFW_PRESS)
-    // {
-    //     newRotationAxis.x = 1.0f;
-    // }
+    glm::vec3 newRotationAxis(0.0f);
+    if (glfwGetKey(window, GLFW_KEY_X) == GLFW_PRESS)
+    {
+        newRotationAxis.x = 1.0f;
+    }
     // if (glfwGetKey(window, GLFW_KEY_Y) == GLFW_PRESS)
     // {
     //     newRotationAxis.y = 1.0f;
     // }
-    // if (glfwGetKey(window, GLFW_KEY_Z) == GLFW_PRESS)
-    // {
-    //     newRotationAxis.z = 1.0f;
-    // }
+    if (glfwGetKey(window, GLFW_KEY_Z) == GLFW_PRESS)
+    {
+        newRotationAxis.z = 1.0f;
+    }
 
     // if (newRotationAxis != glm::vec3(0.0f))
     // {
