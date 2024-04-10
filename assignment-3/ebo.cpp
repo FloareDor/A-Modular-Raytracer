@@ -263,9 +263,15 @@ unsigned int vertexShader = glCreateShader(GL_VERTEX_SHADER);
     glDeleteShader(phongFragmentShader);
 
     // Set default shading technique to flat shading
-    unsigned int currentShaderProgram = shaderProgram;
+    unsigned int currentShaderProgram = gouradShaderProgram;
+    objReturn obj;
+    if (currentShaderProgram == gouradShaderProgram)
+    {
+        objReturn obj = loadObjFileForFlatShading("data/data/sphere.obj");
+    }else{
+        objReturn obj = loadObjFile("data/data/sphere.obj");
+    }
 
-    objReturn obj = loadObjFile("data/data/sphere.obj");
     float *renderVertices = obj.vertices;
     float *normals = obj.normals;
     int *indices = obj.indices;
@@ -296,9 +302,6 @@ unsigned int vertexShader = glCreateShader(GL_VERTEX_SHADER);
     glVertexAttribPointer(1, 3, GL_FLOAT, GL_FALSE, 6 * sizeof(float), (void*)(3 * sizeof(float)));
     glEnableVertexAttribArray(1);
 
-    glVertexAttribPointer(2, 3, GL_FLOAT, GL_FALSE, 9 * sizeof(float), (void*)(6 * sizeof(float)));
-    glEnableVertexAttribArray(2);
-
     // note that this is allowed, the call to glVertexAttribPointer registered VBO as the vertex attribute's bound vertex buffer object so afterwards we can safely unbind
     glBindBuffer(GL_ARRAY_BUFFER, 0); 
 
@@ -317,7 +320,7 @@ unsigned int vertexShader = glCreateShader(GL_VERTEX_SHADER);
     {   
         double currentTime = glfwGetTime();
         double elapsedTime = currentTime - previousTime;
-        std::cout << lightPos.x << " " << lightPos.y << " " << lightPos.z << std::endl;
+        // std::cout << lightPos.x << " " << lightPos.y << " " << lightPos.z << std::endl;
         // std::cout << "fov: " << fov << " " << "nearPlane: " << nearPlane << " " << "farPlane: " << farPlane << std::endl;
         // std::cout << "Time taken for this frame: " << elapsedTime << " seconds" << std::endl;
         // std::cout << currentShaderProgram  << std::endl;
